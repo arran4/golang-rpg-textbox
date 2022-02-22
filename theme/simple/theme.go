@@ -16,8 +16,8 @@ var (
 	ChevronBytes []byte
 	//go:embed "frame.png"
 	FrameBytes []byte
-	//go:embed "person.png"
-	PersonBytes []byte
+	//go:embed "avatar.png"
+	AvatarBytes []byte
 )
 
 type Theme struct {
@@ -51,13 +51,13 @@ func (t *Theme) Frame() image.Image {
 }
 
 func (t *Theme) FrameCenter() image.Rectangle {
-	return image.Rect(35, 35, 95, 99)
+	return image.Rect(34, 34, 63, 58)
 }
 
-func (t *Theme) Person() image.Image {
+func (t *Theme) Avatar() image.Image {
 	if t.person == nil {
 		var err error
-		t.person, err = png.Decode(bytes.NewReader(PersonBytes))
+		t.person, err = png.Decode(bytes.NewReader(AvatarBytes))
 		if err != nil {
 			panic(err)
 		}
