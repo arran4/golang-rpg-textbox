@@ -27,6 +27,7 @@ type Theme struct {
 }
 
 var _ theme.Theme = (*Theme)(nil)
+var _ theme.Frame = (*Theme)(nil)
 
 func (t *Theme) Chevron() image.Image {
 	if t.chevron == nil {

@@ -7,9 +7,12 @@ import (
 
 type Theme interface {
 	Chevron() image.Image
-	Frame() image.Image
-	FrameCenter() image.Rectangle
 	Avatar() image.Image
 	FontFace() font.Face
 	FontDrawer() *font.Drawer
+}
+
+type Frame interface {
+	Frame() image.Image
+	FrameCenter() image.Rectangle
 }
