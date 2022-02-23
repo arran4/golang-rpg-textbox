@@ -39,8 +39,6 @@ type TextBox struct {
 	wordwrapOptions []wordwrap.WrapperOption
 	wrapper         *wordwrap.SimpleWrapper
 	name            Name
-	textRect        image.Rectangle
-	target          Image
 	page            int
 	pages           []*Page
 }
@@ -61,10 +59,9 @@ type Image interface {
 	SubImage(image.Rectangle) image.Image
 }
 
-func NewSimpleTextBox(th theme.Theme, text string, i Image, options ...Option) (*TextBox, error) {
+func NewSimpleTextBox(th theme.Theme, text string, destSize image.Point, options ...Option) (*TextBox, error) {
 	tb := &TextBox{
-		theme:  th,
-		target: i,
+		theme: th,
 	}
 	for _, option := range options {
 		option.apply(tb)
@@ -72,50 +69,60 @@ func NewSimpleTextBox(th theme.Theme, text string, i Image, options ...Option) (
 	if tb.wrapper == nil {
 		tb.wrapper = wordwrap.NewSimpleWrapper(text, th.FontFace(), tb.wordwrapOptions...)
 	}
-	if err := tb.calculateTextRect(); err != nil {
+	destRect := image.Rectangle{
+		Min: image.Point{},
+		Max: destSize,
+	}
+	tr, err := tb.calculateTextRect(destRect)
+	if err != nil {
 		return nil, err
 	}
-	for {
-		ls, _, err := tb.wrapper.TextToRect(tb.textRect)
-		if err != nil {
-			return nil, err
-		}
-		if len(ls) == 0 {
-			break
-		}
-		page := &Page{
-			ls: ls,
-		}
-		tb.pages = append(tb.pages, page)
+	found, err := tb.calculateNextFrame(tr)
+	if err != nil {
+		return nil, err
 	}
-	if len(tb.pages) == 0 {
+	if !found || len(tb.pages) == 0 {
 		return nil, errors.New("no pages drawn")
 	}
 	return tb, nil
 }
 
-func (tb *TextBox) calculateTextRect() error {
-	target := tb.target.Bounds()
-	tb.textRect = target
+func (tb *TextBox) calculateNextFrame(textRect image.Rectangle) (bool, error) {
+	ls, _, err := tb.wrapper.TextToRect(textRect)
+	if err != nil {
+		return false, err
+	}
+	if len(ls) == 0 {
+		return false, nil
+	}
+	page := &Page{
+		ls: ls,
+	}
+	tb.pages = append(tb.pages, page)
+	return true, nil
+}
+
+func (tb *TextBox) calculateTextRect(destRect image.Rectangle) (image.Rectangle, error) {
+	textRect := destRect
 	switch t := tb.theme.(type) {
 	case theme.Frame:
 		fs := t.Frame().Bounds()
 		fc := t.FrameCenter()
-		tb.textRect.Min = tb.textRect.Min.Add(fc.Min)
-		tb.textRect.Max = tb.textRect.Max.Sub(image.Pt(fs.Max.X-fc.Max.X, fs.Max.Y-fc.Max.Y))
+		textRect.Min = textRect.Min.Add(fc.Min)
+		textRect.Max = textRect.Max.Sub(image.Pt(fs.Max.X-fc.Max.X, fs.Max.Y-fc.Max.Y))
 	default:
-		return fmt.Errorf("invalid theme, missing a frame drawer")
+		return textRect, fmt.Errorf("invalid theme, missing a frame drawer")
 	}
-	return nil
+	return textRect, nil
 }
 
-func (tb *TextBox) drawFrame() error {
-	switch t := tb.theme.(type) {
+func drawFrame(t theme.Theme, target Image) error {
+	switch t := t.(type) {
 	case theme.Frame:
 		fc := t.FrameCenter()
-		ttb := tb.target.Bounds()
+		ttb := target.Bounds()
 		fd := frame.NewFrame(ttb, t.Frame(), fc, frame.Stretched)
-		draw.Draw(tb.target, ttb, fd, ttb.Min, draw.Src)
+		draw.Draw(target, ttb, fd, ttb.Min, draw.Src)
 	default:
 		return fmt.Errorf("invalid theme, missing a frame drawer")
 	}
@@ -130,17 +137,52 @@ type Page struct {
 	ls []wordwrap.Line
 }
 
-func (tb *TextBox) DrawNextFrame() (bool, error) {
+func (tb *TextBox) CalculateAllPages(destSize image.Point) (int, error) {
+	destRect := image.Rectangle{
+		Min: image.Point{},
+		Max: destSize,
+	}
+	tr, err := tb.calculateTextRect(destRect)
+	if err != nil {
+		return len(tb.pages), err
+	}
+	for {
+		found, err := tb.calculateNextFrame(tr)
+		if err != nil {
+			return len(tb.pages), err
+		}
+		if !found {
+			return len(tb.pages), nil
+		}
+	}
+}
+
+func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
 	var page *Page
+	if tb.page == len(tb.pages) {
+		n, err := tb.calculateNextFrame(target.Bounds())
+		if err != nil {
+			return false, err
+		}
+		if !n {
+			return false, nil
+		}
+	}
 	if tb.page >= len(tb.pages) {
 		return false, nil
 	}
 	page = tb.pages[tb.page]
 	tb.page++
-	if err := tb.drawFrame(); err != nil {
+	if err := drawFrame(tb.theme, target); err != nil {
 		return false, err
 	}
-	subImage := tb.target.SubImage(tb.textRect).(Image)
-	err := tb.wrapper.RenderLines(subImage, page.ls, tb.textRect.Min)
-	return true, err
+	textRect, err := tb.calculateTextRect(target.Bounds())
+	if err != nil {
+		return false, err
+	}
+	subImage := target.SubImage(textRect).(Image)
+	if err := tb.wrapper.RenderLines(subImage, page.ls, textRect.Min); err != nil {
+		return false, err
+	}
+	return true, nil
 }

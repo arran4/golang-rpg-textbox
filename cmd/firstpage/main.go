@@ -28,7 +28,7 @@ func init() {
 func main() {
 	flag.Parse()
 	log.Printf("Starting")
-	i := image.NewRGBA(image.Rect(0, 0, *width, *height))
+	textBoxSize := image.Pt(*width, *height)
 	text, err := GetText(*textsource)
 	if err != nil {
 		log.Panicf("Text fetch error: %s", err)
@@ -37,12 +37,23 @@ func main() {
 	if err != nil {
 		log.Panicf("Theme fetch error: %s", err)
 	}
-	rtb, err := rpgtextbox.NewSimpleTextBox(t, text, i)
+	rtb, err := rpgtextbox.NewSimpleTextBox(t, text, textBoxSize)
 	if err != nil {
 		log.Panicf("Text fetch error: %s", err)
 	}
-	if _, err := rtb.DrawNextFrame(); err != nil {
-		log.Panicf("Draw next frame error: %s", err)
+	pages, err := rtb.CalculateAllPages(textBoxSize)
+	if err != nil {
+		log.Panicf("Text calculate error: %s", err)
+	}
+
+	i := image.NewRGBA(image.Rect(0, 0, *width, *height*pages))
+	pos := image.Rect(0, 0, *width, *height)
+	for page := 0; page < pages; page++ {
+		log.Printf("Rendering page %d or %d at %s", page, pages, pos)
+		if _, err := rtb.DrawNextPageFrame(i.SubImage(pos).(rpgtextbox.Image)); err != nil {
+			log.Panicf("Draw next frame error: %s", err)
+		}
+		pos = pos.Add(image.Pt(0, textBoxSize.Y))
 	}
 	if err := util.SaveFile(i, *outfilename); err != nil {
 		log.Panicf("Error with saving file: %s", err)
