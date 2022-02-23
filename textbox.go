@@ -146,7 +146,6 @@ type SimpleLayout struct {
 	centerRect  image.Rectangle
 	avatarRect  image.Rectangle
 	chevronRect image.Rectangle
-	frameSize   image.Rectangle
 }
 
 func (sl *SimpleLayout) TextRect() image.Rectangle {
@@ -329,9 +328,8 @@ func (tb *TextBox) drawMoreChevron(target util.Image, layout Layout) {
 	cti := tb.theme.Chevron()
 	ctr := cti.Bounds()
 	switch tb.moreChevronLocation {
-	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, CenterBottomOnFrameTextFrame, CenterBottomOnFrameFrame:
-		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
-	case RightBottomInsideTextFrame, RightBottomInsideFrame, RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
+	case NoMoreChevron:
+	default:
 		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
 	}
 }
