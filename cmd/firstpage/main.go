@@ -67,6 +67,10 @@ func main() {
 	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideTextFrame, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
 	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomOnFrameTextFrame, rpgtextbox.CenterRight, rpgtextbox.NearestNeighbour))
 	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomOnFrameFrame, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.RightBottomInsideTextFrame, rpgtextbox.CenterRight, rpgtextbox.NearestNeighbour))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.RightBottomInsideFrame, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.RightBottomOnFrameTextFrame, rpgtextbox.CenterRight))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.RightBottomOnFrameFrame, rpgtextbox.CenterLeft))
 
 	const columns = 2
 

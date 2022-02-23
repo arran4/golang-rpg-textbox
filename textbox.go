@@ -31,6 +31,10 @@ const (
 	CenterBottomInsideFrame
 	CenterBottomOnFrameTextFrame
 	CenterBottomOnFrameFrame
+	RightBottomInsideTextFrame
+	RightBottomInsideFrame
+	RightBottomOnFrameTextFrame
+	RightBottomOnFrameFrame
 )
 
 func (cl MoreChevronLocations) apply(box *TextBox) {
@@ -207,24 +211,26 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	default:
 		return nil, fmt.Errorf("unknown avatar location %v", tb.avatarLocation)
 	}
+	l.chevronRect = tb.theme.Chevron().Bounds()
 	switch tb.moreChevronLocation {
 	case NoMoreChevron:
-	case CenterBottomInsideTextFrame:
-		l.chevronRect = tb.theme.Chevron().Bounds()
+	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, RightBottomInsideTextFrame, RightBottomInsideFrame:
 		l.textRect.Max.Y -= l.chevronRect.Dy()
-		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
-	case CenterBottomInsideFrame:
-		l.chevronRect = tb.theme.Chevron().Bounds()
-		l.textRect.Max.Y -= l.chevronRect.Dy()
-		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
-	case CenterBottomOnFrameTextFrame:
-		l.chevronRect = tb.theme.Chevron().Bounds()
+	case CenterBottomOnFrameTextFrame, CenterBottomOnFrameFrame, RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
 		l.textRect.Max.Y -= util.Max(l.chevronRect.Dy()-destRect.Dy(), 0)
+	default:
+		return nil, fmt.Errorf("unknown more chevron location %v", tb.moreChevronLocation)
+	}
+	switch tb.moreChevronLocation {
+	case NoMoreChevron:
+	case CenterBottomInsideTextFrame, CenterBottomOnFrameTextFrame:
 		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
-	case CenterBottomOnFrameFrame:
-		l.chevronRect = tb.theme.Chevron().Bounds()
-		l.textRect.Max.Y -= util.Max(l.chevronRect.Dy()-destRect.Dy(), 0)
+	case CenterBottomInsideFrame, CenterBottomOnFrameFrame:
 		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+	case RightBottomInsideTextFrame, RightBottomInsideFrame:
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Max.X-l.chevronRect.Dx(), l.textRect.Max.Y))
+	case RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Max.X-l.chevronRect.Dx(), l.textRect.Max.Y))
 	default:
 		return nil, fmt.Errorf("unknown more chevron location %v", tb.moreChevronLocation)
 	}
@@ -323,9 +329,9 @@ func (tb *TextBox) drawMoreChevron(target util.Image, layout Layout) {
 	cti := tb.theme.Chevron()
 	ctr := cti.Bounds()
 	switch tb.moreChevronLocation {
-	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, CenterBottomOnFrameTextFrame /*, CenterBottomOnFrameFrame*/ :
+	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, CenterBottomOnFrameTextFrame, CenterBottomOnFrameFrame:
 		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
-	case CenterBottomOnFrameFrame:
+	case RightBottomInsideTextFrame, RightBottomInsideFrame, RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
 		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
 	}
 }
