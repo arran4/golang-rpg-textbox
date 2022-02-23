@@ -59,12 +59,14 @@ func main() {
 			pages: pages,
 		})
 	}
-	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize))
-	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterLeft, rpgtextbox.CenterAvatar))
-	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterRight))
-	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterLeft))
-	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterRight, rpgtextbox.NearestNeighbour))
-	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideTextFrame))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideTextFrame, rpgtextbox.CenterLeft, rpgtextbox.CenterAvatar))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideFrame, rpgtextbox.CenterRight))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideTextFrame, rpgtextbox.CenterLeft))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideFrame, rpgtextbox.CenterRight, rpgtextbox.NearestNeighbour))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomInsideTextFrame, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomOnFrameTextFrame, rpgtextbox.CenterRight, rpgtextbox.NearestNeighbour))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterBottomOnFrameFrame, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
 
 	const columns = 2
 
@@ -74,7 +76,7 @@ func main() {
 		for tbi, tb := range points {
 			if tb.pages > page {
 				target := pos.Add(image.Pt(*width*(tbi%columns), *height*(maxPages*(tbi/columns)+page)))
-				if _, err := tb.rtb.DrawNextPageFrame(i.SubImage(target).(rpgtextbox.Image)); err != nil {
+				if _, err := tb.rtb.DrawNextPageFrame(i.SubImage(target).(util.Image)); err != nil {
 					log.Panicf("Draw next frame error: %s", err)
 				}
 			}

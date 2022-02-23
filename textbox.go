@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/arran4/golang-frame"
 	"github.com/arran4/golang-rpg-textbox/theme"
+	"github.com/arran4/golang-rpg-textbox/util"
 	"github.com/arran4/golang-wordwrap"
 	"golang.org/x/image/draw"
 	"image"
@@ -26,7 +27,10 @@ type MoreChevronLocations int
 
 const (
 	NoMoreChevron MoreChevronLocations = iota
+	CenterBottomInsideTextFrame
 	CenterBottomInsideFrame
+	CenterBottomOnFrameTextFrame
+	CenterBottomOnFrameFrame
 )
 
 func (cl MoreChevronLocations) apply(box *TextBox) {
@@ -69,17 +73,11 @@ func (n Name) apply(box *TextBox) {
 	box.name = n
 }
 
-// Image because image.Image / draw.Image should really have SubImage as part of it.
-type Image interface {
-	draw.Image
-	SubImage(image.Rectangle) image.Image
-}
-
 type avatar struct {
-	Image
+	util.Image
 }
 
-func Avatar(i Image) Option {
+func Avatar(i util.Image) Option {
 	return &avatar{
 		Image: i,
 	}
@@ -144,6 +142,7 @@ type SimpleLayout struct {
 	centerRect  image.Rectangle
 	avatarRect  image.Rectangle
 	chevronRect image.Rectangle
+	frameSize   image.Rectangle
 }
 
 func (sl *SimpleLayout) TextRect() image.Rectangle {
@@ -210,9 +209,22 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	}
 	switch tb.moreChevronLocation {
 	case NoMoreChevron:
+	case CenterBottomInsideTextFrame:
+		l.chevronRect = tb.theme.Chevron().Bounds()
+		l.textRect.Max.Y -= l.chevronRect.Dy()
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
 	case CenterBottomInsideFrame:
 		l.chevronRect = tb.theme.Chevron().Bounds()
 		l.textRect.Max.Y -= l.chevronRect.Dy()
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+	case CenterBottomOnFrameTextFrame:
+		l.chevronRect = tb.theme.Chevron().Bounds()
+		l.textRect.Max.Y -= util.Max(l.chevronRect.Dy()-destRect.Dy(), 0)
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+	case CenterBottomOnFrameFrame:
+		l.chevronRect = tb.theme.Chevron().Bounds()
+		l.textRect.Max.Y -= util.Max(l.chevronRect.Dy()-destRect.Dy(), 0)
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
 	default:
 		return nil, fmt.Errorf("unknown more chevron location %v", tb.moreChevronLocation)
 	}
@@ -232,7 +244,7 @@ func (tb *TextBox) calculateCenterRect(destRect image.Rectangle) (image.Rectangl
 	return textRect, nil
 }
 
-func drawFrame(t theme.Theme, target Image) error {
+func drawFrame(t theme.Theme, target util.Image) error {
 	switch t := t.(type) {
 	case theme.Frame:
 		fc := t.FrameCenter()
@@ -273,7 +285,7 @@ func (tb *TextBox) CalculateAllPages(destSize image.Point) (int, error) {
 	}
 }
 
-func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
+func (tb *TextBox) DrawNextPageFrame(target util.Image) (bool, error) {
 	var page *Page
 	layout, err := NewSimpleLayout(tb, target.Bounds())
 	if err != nil {
@@ -292,11 +304,33 @@ func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
 		return false, nil
 	}
 	page = tb.pages[tb.page]
-	tb.page++
+	defer func() { tb.page++ }()
 	if err := drawFrame(tb.theme, target); err != nil {
 		return false, err
 	}
-	subImage := target.SubImage(layout.TextRect()).(Image)
+	subImage := target.SubImage(layout.TextRect()).(util.Image)
+	tb.drawAvatar(target, layout)
+	if tb.HasNext() {
+		tb.drawMoreChevron(target, layout)
+	}
+	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (tb *TextBox) drawMoreChevron(target util.Image, layout Layout) {
+	cti := tb.theme.Chevron()
+	ctr := cti.Bounds()
+	switch tb.moreChevronLocation {
+	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, CenterBottomOnFrameTextFrame /*, CenterBottomOnFrameFrame*/ :
+		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
+	case CenterBottomOnFrameFrame:
+		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
+	}
+}
+
+func (tb *TextBox) drawAvatar(target util.Image, layout Layout) {
 	switch tb.avatarLocation {
 	case CenterRight, CenterLeft:
 		avatarImg := tb.Avatar()
@@ -304,11 +338,11 @@ func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
 		atr := layout.AvatarRect()
 		switch tb.avatarFit {
 		case NearestNeighbour:
-			draw.NearestNeighbor.Scale(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air, draw.Over, nil)
+			draw.NearestNeighbor.Scale(target.SubImage(layout.AvatarRect()).(util.Image), layout.AvatarRect(), avatarImg, air, draw.Over, nil)
 		case ApproxBiLinear:
-			draw.ApproxBiLinear.Scale(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air, draw.Over, nil)
+			draw.ApproxBiLinear.Scale(target.SubImage(layout.AvatarRect()).(util.Image), layout.AvatarRect(), avatarImg, air, draw.Over, nil)
 		case NoAvatarFit:
-			draw.Draw(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air.Min, draw.Over)
+			draw.Draw(target.SubImage(layout.AvatarRect()).(util.Image), layout.AvatarRect(), avatarImg, air.Min, draw.Over)
 		case CenterAvatar:
 			dx := air.Dx() - atr.Dx()
 			dy := air.Dy() - atr.Dy()
@@ -319,13 +353,9 @@ func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
 				dx = 0
 			}
 			air = air.Add(image.Pt(dx/2, dy/2))
-			draw.Draw(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air.Min, draw.Over)
+			draw.Draw(target.SubImage(layout.AvatarRect()).(util.Image), layout.AvatarRect(), avatarImg, air.Min, draw.Over)
 		}
 	}
-	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min); err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 func (tb *TextBox) Avatar() image.Image {
@@ -333,4 +363,11 @@ func (tb *TextBox) Avatar() image.Image {
 		return tb.avatar
 	}
 	return tb.theme.Avatar()
+}
+
+func (tb *TextBox) HasNext() bool {
+	if len(tb.pages) > tb.page+1 {
+		return true
+	}
+	return tb.wrapper.HasNext()
 }

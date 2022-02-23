@@ -2,14 +2,15 @@ package util
 
 import (
 	"fmt"
-	"github.com/arran4/golang-rpg-textbox"
+	"golang.org/x/image/draw"
+	"image"
 	"image/png"
 	"log"
 	"os"
 )
 
 //nolint:golint,unused
-func LoadImageFile(fn string) (rpgtextbox.Image, error) {
+func LoadImageFile(fn string) (Image, error) {
 	fi, err := os.Open(fn)
 	if err != nil {
 		return nil, fmt.Errorf("file create: %w", err)
@@ -23,10 +24,10 @@ func LoadImageFile(fn string) (rpgtextbox.Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("png encoding: %w", err)
 	}
-	return i.(rpgtextbox.Image), nil
+	return i.(Image), nil
 }
 
-func SaveFile(i rpgtextbox.Image, fn string) error {
+func SaveFile(i Image, fn string) error {
 	_ = os.MkdirAll("images", 0755)
 	fi, err := os.Create(fn)
 	if err != nil {
@@ -41,4 +42,10 @@ func SaveFile(i rpgtextbox.Image, fn string) error {
 		return fmt.Errorf("png encoding: %w", err)
 	}
 	return nil
+}
+
+// Image because image.Image / draw.Image should really have SubImage as part of it.
+type Image interface {
+	draw.Image
+	SubImage(image.Rectangle) image.Image
 }
