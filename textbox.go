@@ -108,7 +108,7 @@ func (tb *TextBox) calculateTextRect(destRect image.Rectangle) (image.Rectangle,
 	case theme.Frame:
 		fc := t.FrameCenter()
 		fd := frame.NewFrame(destRect, t.Frame(), fc, frame.Stretched)
-		return fd.MiddleRect(), nil
+		textRect = fd.MiddleRect()
 	default:
 		return textRect, fmt.Errorf("invalid theme, missing a frame drawer")
 	}
