@@ -6,8 +6,8 @@ import (
 	"fmt"
 	rpgtextbox "github.com/arran4/golang-rpg-textbox"
 	"github.com/arran4/golang-rpg-textbox/theme/simple"
+	"github.com/arran4/golang-rpg-textbox/util"
 	"image"
-	"image/png"
 	"io"
 	"io/ioutil"
 	"log"
@@ -44,27 +44,10 @@ func main() {
 	if _, err := rtb.DrawNextFrame(); err != nil {
 		log.Panicf("Draw next frame error: %s", err)
 	}
-	if err := SaveFile(i, *outfilename); err != nil {
+	if err := util.SaveFile(i, *outfilename); err != nil {
 		log.Panicf("Error with saving file: %s", err)
 	}
 	log.Printf("Done as %s", *outfilename)
-}
-
-func SaveFile(i rpgtextbox.Image, fn string) error {
-	_ = os.MkdirAll("images", 0755)
-	fi, err := os.Create(fn)
-	if err != nil {
-		return fmt.Errorf("file create: %w", err)
-	}
-	defer func() {
-		if err := fi.Close(); err != nil {
-			log.Printf("File close error: %s", err)
-		}
-	}()
-	if err := png.Encode(fi, i); err != nil {
-		return fmt.Errorf("png encoding: %w", err)
-	}
-	return nil
 }
 
 func GetText(fn string) (string, error) {
