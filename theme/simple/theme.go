@@ -20,16 +20,20 @@ var (
 	AvatarBytes []byte
 )
 
-type Theme struct {
+type t struct {
 	chevron image.Image
 	frame   image.Image
 	person  image.Image
 }
 
-var _ theme.Theme = (*Theme)(nil)
-var _ theme.Frame = (*Theme)(nil)
+func New() (*t, error) {
+	return &t{}, nil
+}
 
-func (t *Theme) Chevron() image.Image {
+var _ theme.Theme = (*t)(nil)
+var _ theme.Frame = (*t)(nil)
+
+func (t *t) Chevron() image.Image {
 	if t.chevron == nil {
 		var err error
 		t.chevron, err = png.Decode(bytes.NewReader(ChevronBytes))
@@ -40,7 +44,7 @@ func (t *Theme) Chevron() image.Image {
 	return t.chevron
 }
 
-func (t *Theme) Frame() image.Image {
+func (t *t) Frame() image.Image {
 	if t.frame == nil {
 		var err error
 		t.frame, err = png.Decode(bytes.NewReader(FrameBytes))
@@ -51,11 +55,11 @@ func (t *Theme) Frame() image.Image {
 	return t.frame
 }
 
-func (t *Theme) FrameCenter() image.Rectangle {
-	return image.Rect(34, 34, 63, 58)
+func (t *t) FrameCenter() image.Rectangle {
+	return image.Rect(35, 34, 63, 58)
 }
 
-func (t *Theme) Avatar() image.Image {
+func (t *t) Avatar() image.Image {
 	if t.person == nil {
 		var err error
 		t.person, err = png.Decode(bytes.NewReader(AvatarBytes))
@@ -66,7 +70,7 @@ func (t *Theme) Avatar() image.Image {
 	return t.person
 }
 
-func (t *Theme) FontFace() font.Face {
+func (t *t) FontFace() font.Face {
 	f, err := truetype.Parse(goregular.TTF)
 	if err != nil {
 		panic(err)
@@ -77,7 +81,7 @@ func (t *Theme) FontFace() font.Face {
 	})
 }
 
-func (t *Theme) FontDrawer() *font.Drawer {
+func (t *t) FontDrawer() *font.Drawer {
 	return &font.Drawer{
 		Src:  nil,
 		Face: t.FontFace(),
