@@ -85,20 +85,3 @@ func GetText(fn string) (string, error) {
 	}
 	return string(b), nil
 }
-
-func LoadFile(fn string) (rpgtextbox.Image, error) {
-	fi, err := os.Open(fn)
-	if err != nil {
-		return nil, fmt.Errorf("file create: %w", err)
-	}
-	defer func() {
-		if err := fi.Close(); err != nil {
-			log.Printf("File close error: %s", err)
-		}
-	}()
-	i, err := png.Decode(fi)
-	if err != nil {
-		return nil, fmt.Errorf("png encoding: %w", err)
-	}
-	return i.(rpgtextbox.Image), nil
-}
