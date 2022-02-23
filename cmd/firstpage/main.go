@@ -4,7 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	rpgtextbox "github.com/arran4/golang-rpg-textbox"
+	"github.com/arran4/golang-rpg-textbox"
 	"github.com/arran4/golang-rpg-textbox/theme/simple"
 	"github.com/arran4/golang-rpg-textbox/util"
 	"image"
@@ -37,23 +37,48 @@ func main() {
 	if err != nil {
 		log.Panicf("Theme fetch error: %s", err)
 	}
-	rtb, err := rpgtextbox.NewSimpleTextBox(t, text, textBoxSize)
-	if err != nil {
-		log.Panicf("Text fetch error: %s", err)
+	type TextBox struct {
+		rtb   *rpgtextbox.TextBox
+		pages int
 	}
-	pages, err := rtb.CalculateAllPages(textBoxSize)
-	if err != nil {
-		log.Panicf("Text calculate error: %s", err)
-	}
-
-	i := image.NewRGBA(image.Rect(0, 0, *width, *height*pages))
-	pos := image.Rect(0, 0, *width, *height)
-	for page := 0; page < pages; page++ {
-		log.Printf("Rendering page %d or %d at %s", page, pages, pos)
-		if _, err := rtb.DrawNextPageFrame(i.SubImage(pos).(rpgtextbox.Image)); err != nil {
-			log.Panicf("Draw next frame error: %s", err)
+	var points []*TextBox
+	var maxPages int
+	addPoint := func(tb *rpgtextbox.TextBox, err error) {
+		if err != nil {
+			log.Panicf("Text fetch error: %s", err)
 		}
-		pos = pos.Add(image.Pt(0, textBoxSize.Y))
+		pages, err := tb.CalculateAllPages(textBoxSize)
+		if err != nil {
+			log.Panicf("Text fetch error: %s", err)
+		}
+		if pages > maxPages {
+			maxPages = pages
+		}
+		points = append(points, &TextBox{
+			rtb:   tb,
+			pages: pages,
+		})
+	}
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterLeft, rpgtextbox.CenterAvatar))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterRight))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterLeft))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterRight, rpgtextbox.NearestNeighbour))
+	addPoint(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, rpgtextbox.CenterLeft, rpgtextbox.ApproxBiLinear))
+
+	const columns = 2
+
+	i := image.NewRGBA(image.Rect(0, 0, *width*columns, (*height)*maxPages*(len(points)/columns+(columns-1+len(points)%columns)/columns)))
+	pos := image.Rect(0, 0, *width, *height)
+	for page := 0; page < maxPages; page++ {
+		for tbi, tb := range points {
+			if tb.pages > page {
+				target := pos.Add(image.Pt(*width*(tbi%columns), *height*(maxPages*(tbi/columns)+page)))
+				if _, err := tb.rtb.DrawNextPageFrame(i.SubImage(target).(rpgtextbox.Image)); err != nil {
+					log.Panicf("Draw next frame error: %s", err)
+				}
+			}
+		}
 	}
 	if err := util.SaveFile(i, *outfilename); err != nil {
 		log.Panicf("Error with saving file: %s", err)
