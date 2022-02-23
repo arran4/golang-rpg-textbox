@@ -304,11 +304,11 @@ func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
 		atr := layout.AvatarRect()
 		switch tb.avatarFit {
 		case NearestNeighbour:
-			draw.NearestNeighbor.Scale(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air, draw.Src, nil)
+			draw.NearestNeighbor.Scale(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air, draw.Over, nil)
 		case ApproxBiLinear:
-			draw.ApproxBiLinear.Scale(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air, draw.Src, nil)
+			draw.ApproxBiLinear.Scale(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air, draw.Over, nil)
 		case NoAvatarFit:
-			draw.Draw(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air.Min, draw.Src)
+			draw.Draw(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air.Min, draw.Over)
 		case CenterAvatar:
 			dx := air.Dx() - atr.Dx()
 			dy := air.Dy() - atr.Dy()
@@ -319,7 +319,7 @@ func (tb *TextBox) DrawNextPageFrame(target Image) (bool, error) {
 				dx = 0
 			}
 			air = air.Add(image.Pt(dx/2, dy/2))
-			draw.Draw(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air.Min, draw.Src)
+			draw.Draw(target.SubImage(layout.AvatarRect()).(Image), layout.AvatarRect(), avatarImg, air.Min, draw.Over)
 		}
 	}
 	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min); err != nil {
