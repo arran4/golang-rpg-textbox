@@ -118,7 +118,7 @@ func NewSimpleTextBox(th theme.Theme, text string, destSize image.Point, options
 		option.apply(tb)
 	}
 	if tb.moreChevronLocation == TextEndChevron {
-		//tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.PageBreakBox(th.Chevron()))
+		tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron())))
 	}
 	if tb.wrapper == nil {
 		tb.wrapper = wordwrap.NewSimpleWrapper(text, th.FontFace(), tb.wordwrapOptions...)
