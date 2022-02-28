@@ -15,8 +15,8 @@ type AvatarLocations int
 
 const (
 	NoAvatar AvatarLocations = iota
-	CenterLeft
-	CenterRight
+	LeftAvatar
+	RightAvatar
 )
 
 func (al AvatarLocations) apply(box *TextBox) {
@@ -214,7 +214,7 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	}
 	switch tb.avatarLocation {
 	case NoAvatar:
-	case CenterLeft:
+	case LeftAvatar:
 		l.textRect.Min.X += l.avatarRect.Dx()
 		l.avatarRect = image.Rectangle{
 			Min: l.centerRect.Min,
@@ -223,7 +223,7 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 				Y: l.centerRect.Max.Y,
 			},
 		}
-	case CenterRight:
+	case RightAvatar:
 		l.textRect.Max.X -= l.avatarRect.Dx()
 		l.avatarRect = image.Rectangle{
 			Min: image.Pt(l.textRect.Max.X, l.textRect.Min.Y),
@@ -363,7 +363,7 @@ func (tb *TextBox) drawMoreChevron(target util.Image, layout Layout) {
 
 func (tb *TextBox) drawAvatar(target util.Image, layout Layout) {
 	switch tb.avatarLocation {
-	case CenterRight, CenterLeft:
+	case RightAvatar, LeftAvatar:
 		avatarImg := tb.Avatar()
 		air := avatarImg.Bounds()
 		atr := layout.AvatarRect()
