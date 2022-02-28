@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 var (
@@ -171,9 +172,15 @@ func main() {
 	}
 
 	pos := image.Rect(0, 0, *width, *height)
-	for _, tb := range points {
-		tb.Render(maxPages, pos)
+	wg := sync.WaitGroup{}
+	for i := range points {
+		wg.Add(1)
+		go func(tb *TextBox) {
+			defer wg.Done()
+			tb.Render(maxPages, pos)
+		}(points[i])
 	}
+	wg.Wait()
 	log.Printf("Done")
 }
 
