@@ -1,8 +1,8 @@
 project_name: simplewraptoimage
 builds:
   -
-    binary: "firstpage"
-    dir: cmd/firstpage
+    binary: "samples"
+    dir: cmd/samples
     env:
       - CGO_ENABLED=0
     goos:

@@ -15,8 +15,8 @@ type AvatarLocations int
 
 const (
 	NoAvatar AvatarLocations = iota
-	CenterLeft
-	CenterRight
+	LeftAvatar
+	RightAvatar
 )
 
 func (al AvatarLocations) apply(box *TextBox) {
@@ -35,6 +35,7 @@ const (
 	RightBottomInsideFrame
 	RightBottomOnFrameTextFrame
 	RightBottomOnFrameFrame
+	TextEndChevron
 )
 
 func (cl MoreChevronLocations) apply(box *TextBox) {
@@ -54,6 +55,23 @@ func (af AvatarFit) apply(box *TextBox) {
 	box.avatarFit = af
 }
 
+var BoxTextBox = &boxTextBox{}
+
+type boxTextBox struct{}
+
+func (btb *boxTextBox) PostDraw(target util.Image, layout *SimpleLayout, ls []wordwrap.Line) error {
+	util.DrawBox(target, layout.textRect)
+	return nil
+}
+
+func (btb *boxTextBox) apply(box *TextBox) {
+	box.postDraw = append(box.postDraw, btb)
+}
+
+type PostDrawer interface {
+	PostDraw(target util.Image, layout *SimpleLayout, ls []wordwrap.Line) error
+}
+
 type TextBox struct {
 	avatarLocation      AvatarLocations
 	moreChevronLocation MoreChevronLocations
@@ -65,6 +83,7 @@ type TextBox struct {
 	pages               []*Page
 	avatarFit           AvatarFit
 	avatar              *avatar
+	postDraw            []PostDrawer
 }
 
 type Option interface {
@@ -97,6 +116,9 @@ func NewSimpleTextBox(th theme.Theme, text string, destSize image.Point, options
 	}
 	for _, option := range options {
 		option.apply(tb)
+	}
+	if tb.moreChevronLocation == TextEndChevron {
+		tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron(), wordwrap.ImageBoxMetricCenter(th.FontDrawer()))))
 	}
 	if tb.wrapper == nil {
 		tb.wrapper = wordwrap.NewSimpleWrapper(text, th.FontFace(), tb.wordwrapOptions...)
@@ -192,7 +214,7 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	}
 	switch tb.avatarLocation {
 	case NoAvatar:
-	case CenterLeft:
+	case LeftAvatar:
 		l.textRect.Min.X += l.avatarRect.Dx()
 		l.avatarRect = image.Rectangle{
 			Min: l.centerRect.Min,
@@ -201,7 +223,7 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 				Y: l.centerRect.Max.Y,
 			},
 		}
-	case CenterRight:
+	case RightAvatar:
 		l.textRect.Max.X -= l.avatarRect.Dx()
 		l.avatarRect = image.Rectangle{
 			Min: image.Pt(l.textRect.Max.X, l.textRect.Min.Y),
@@ -212,20 +234,22 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	}
 	l.chevronRect = tb.theme.Chevron().Bounds()
 	switch tb.moreChevronLocation {
-	case NoMoreChevron:
+	case NoMoreChevron, TextEndChevron:
 	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, RightBottomInsideTextFrame, RightBottomInsideFrame:
 		l.textRect.Max.Y -= l.chevronRect.Dy()
 	case CenterBottomOnFrameTextFrame, CenterBottomOnFrameFrame, RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
-		l.textRect.Max.Y -= util.Max(l.chevronRect.Dy()-destRect.Dy(), 0)
+		ydiff := util.Max(l.chevronRect.Dy()-(destRect.Max.Y-l.textRect.Max.Y), 0)
+		l.textRect.Max.Y -= ydiff
+		l.chevronRect = l.chevronRect.Sub(image.Pt(0, ydiff))
 	default:
 		return nil, fmt.Errorf("unknown more chevron location %v", tb.moreChevronLocation)
 	}
 	switch tb.moreChevronLocation {
-	case NoMoreChevron:
+	case NoMoreChevron, TextEndChevron:
 	case CenterBottomInsideTextFrame, CenterBottomOnFrameTextFrame:
-		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()-l.chevronRect.Dx())/2, l.textRect.Max.Y))
 	case CenterBottomInsideFrame, CenterBottomOnFrameFrame:
-		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()-l.chevronRect.Dx())/2, l.textRect.Max.Y))
 	case RightBottomInsideTextFrame, RightBottomInsideFrame:
 		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Max.X-l.chevronRect.Dx(), l.textRect.Max.Y))
 	case RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
@@ -321,6 +345,11 @@ func (tb *TextBox) DrawNextPageFrame(target util.Image) (bool, error) {
 	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min); err != nil {
 		return false, err
 	}
+	for _, postDrawer := range tb.postDraw {
+		if err := postDrawer.PostDraw(target, layout, page.ls); err != nil {
+			return false, err
+		}
+	}
 	return true, nil
 }
 
@@ -328,7 +357,7 @@ func (tb *TextBox) drawMoreChevron(target util.Image, layout Layout) {
 	cti := tb.theme.Chevron()
 	ctr := cti.Bounds()
 	switch tb.moreChevronLocation {
-	case NoMoreChevron:
+	case NoMoreChevron, TextEndChevron:
 	default:
 		draw.Draw(target.SubImage(layout.ChevronRect()).(util.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
 	}
@@ -336,7 +365,7 @@ func (tb *TextBox) drawMoreChevron(target util.Image, layout Layout) {
 
 func (tb *TextBox) drawAvatar(target util.Image, layout Layout) {
 	switch tb.avatarLocation {
-	case CenterRight, CenterLeft:
+	case RightAvatar, LeftAvatar:
 		avatarImg := tb.Avatar()
 		air := avatarImg.Bounds()
 		atr := layout.AvatarRect()
