@@ -118,7 +118,7 @@ func NewSimpleTextBox(th theme.Theme, text string, destSize image.Point, options
 		option.apply(tb)
 	}
 	if tb.moreChevronLocation == TextEndChevron {
-		tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron())))
+		tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron(), wordwrap.ImageBoxMetricCenter(th.FontDrawer()))))
 	}
 	if tb.wrapper == nil {
 		tb.wrapper = wordwrap.NewSimpleWrapper(text, th.FontFace(), tb.wordwrapOptions...)
@@ -238,16 +238,18 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	case CenterBottomInsideTextFrame, CenterBottomInsideFrame, RightBottomInsideTextFrame, RightBottomInsideFrame:
 		l.textRect.Max.Y -= l.chevronRect.Dy()
 	case CenterBottomOnFrameTextFrame, CenterBottomOnFrameFrame, RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
-		l.textRect.Max.Y -= util.Max(l.chevronRect.Dy()-destRect.Dy(), 0)
+		ydiff := util.Max(l.chevronRect.Dy()-(destRect.Max.Y-l.textRect.Max.Y), 0)
+		l.textRect.Max.Y -= ydiff
+		l.chevronRect = l.chevronRect.Sub(image.Pt(0, ydiff))
 	default:
 		return nil, fmt.Errorf("unknown more chevron location %v", tb.moreChevronLocation)
 	}
 	switch tb.moreChevronLocation {
 	case NoMoreChevron, TextEndChevron:
 	case CenterBottomInsideTextFrame, CenterBottomOnFrameTextFrame:
-		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Min.X+(l.textRect.Dx()-l.chevronRect.Dx())/2, l.textRect.Max.Y))
 	case CenterBottomInsideFrame, CenterBottomOnFrameFrame:
-		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()+l.chevronRect.Dx())/2, l.textRect.Max.Y))
+		l.chevronRect = l.chevronRect.Add(image.Pt(l.centerRect.Min.X+(l.centerRect.Dx()-l.chevronRect.Dx())/2, l.textRect.Max.Y))
 	case RightBottomInsideTextFrame, RightBottomInsideFrame:
 		l.chevronRect = l.chevronRect.Add(image.Pt(l.textRect.Max.X-l.chevronRect.Dx(), l.textRect.Max.Y))
 	case RightBottomOnFrameTextFrame, RightBottomOnFrameFrame:
