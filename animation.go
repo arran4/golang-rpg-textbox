@@ -4,13 +4,11 @@ import (
 	"github.com/arran4/golang-wordwrap"
 	"image"
 	"image/color"
-	"log"
 	"time"
 )
 
 type AnimationMode interface {
 	DrawOption(target wordwrap.Image) (lastPage bool, userInputAccepted bool, wait time.Duration, err error)
-	Done() bool
 	Option
 }
 
@@ -55,15 +53,12 @@ type FadeAnimation struct {
 }
 
 func (f *FadeAnimation) DrawOption(target wordwrap.Image) (finished bool, userInputAccepted bool, waitTime time.Duration, err error) {
-	log.Printf("Step: %d/%d state: %d nextPage: %d", f.step, f.steps, f.fadeState, f.tb.nextPage)
 	if f.layout == nil {
 		f.layout, f.page, err = f.tb.getNextPage(target.Bounds())
 		if err != nil {
-			log.Printf("Error: %v", err)
 			return
 		}
 		if f.layout == nil || f.page == nil {
-			log.Printf("Error: Layout of page empty")
 			finished = true
 			waitTime = -1
 			return
@@ -103,13 +98,6 @@ func (f *FadeAnimation) DrawOption(target wordwrap.Image) (finished bool, userIn
 	return
 }
 
-func (f *FadeAnimation) Done() bool {
-	if f.step == f.steps && f.fadeState == FadeOut {
-		return !f.tb.HasNext()
-	}
-	return false
-}
-
 func (f *FadeAnimation) apply(box *TextBox) {
 	f.tb = box
 	box.animation = f
@@ -122,5 +110,71 @@ func NewFadeAnimation() *FadeAnimation {
 	return &FadeAnimation{
 		duration: duration,
 		steps:    int(duration * 10 / time.Second),
+	}
+}
+
+type BoxByBoxAnimation struct {
+	tb           *TextBox
+	boxNumber    int
+	layout       *SimpleLayout
+	page         *Page
+	WaitTimeFunc func(*BoxByBoxAnimation) time.Duration
+}
+
+func (byb *BoxByBoxAnimation) DrawOption(target wordwrap.Image) (finished bool, userInputAccepted bool, waitTime time.Duration, err error) {
+	if byb.layout == nil {
+		byb.layout, byb.page, err = byb.tb.getNextPage(target.Bounds())
+		if err != nil {
+			return
+		}
+		if byb.layout == nil || byb.page == nil {
+			finished = true
+			waitTime = -1
+			return
+		}
+	}
+	var done bool
+	var opts []wordwrap.DrawOption
+
+	if byb.boxNumber != byb.page.boxCount {
+		opts = append(opts, wordwrap.BoxDrawMap(func(box wordwrap.Box, drawConfig *wordwrap.DrawConfig, stats *wordwrap.BoxPositionStats) wordwrap.Box {
+			if stats.PageBoxOffset <= byb.boxNumber {
+				return box
+			}
+			return nil
+		}))
+	}
+
+	done, err = byb.tb.drawFrame(target, byb.layout, byb.page, opts...)
+
+	if byb.boxNumber > byb.page.boxCount {
+		finished = done
+		userInputAccepted = true
+		byb.boxNumber = 0
+		byb.layout = nil
+		waitTime = -1
+	} else {
+		if byb.WaitTimeFunc != nil {
+			waitTime = byb.WaitTimeFunc(byb)
+		} else {
+			waitTime = time.Second / 10
+		}
+		byb.boxNumber++
+	}
+	return
+}
+
+func (byb *BoxByBoxAnimation) apply(box *TextBox) {
+	byb.tb = box
+	box.animation = byb
+}
+
+var _ AnimationMode = (*BoxByBoxAnimation)(nil)
+
+func NewBoxByBoxAnimation() *BoxByBoxAnimation {
+	return &BoxByBoxAnimation{
+		WaitTimeFunc: func(byb *BoxByBoxAnimation) time.Duration {
+			return time.Second / 10
+		},
 	}
 }

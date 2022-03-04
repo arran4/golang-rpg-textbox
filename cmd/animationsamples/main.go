@@ -97,6 +97,10 @@ func main() {
 			Options:     []rpgtextbox.Option{rpgtextbox.NewFadeAnimation()},
 			Description: "fade-animation",
 		},
+		{
+			Options:     []rpgtextbox.Option{rpgtextbox.NewBoxByBoxAnimation()},
+			Description: "box-by-box-animation",
+		},
 	}
 	for _, o1 := range chevronLocs {
 		oa := append([]rpgtextbox.Option{}, o1.Options...)

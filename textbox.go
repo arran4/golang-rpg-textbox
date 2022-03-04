@@ -155,8 +155,13 @@ func (tb *TextBox) calculateNextFrame(layout Layout) (bool, error) {
 	if len(ls) == 0 {
 		return false, nil
 	}
+	boxCount := 0
+	for _, l := range ls {
+		boxCount += len(l.Boxes())
+	}
 	page := &Page{
-		ls: ls,
+		ls:       ls,
+		boxCount: boxCount,
 	}
 	tb.pages = append(tb.pages, page)
 	return true, nil
@@ -300,7 +305,8 @@ func drawFrame(t theme.Theme, target wordwrap.Image, options ...wordwrap.DrawOpt
 }
 
 type Page struct {
-	ls []wordwrap.Line
+	ls       []wordwrap.Line
+	boxCount int
 }
 
 func (tb *TextBox) CalculateAllPages(destSize image.Point) (int, error) {
