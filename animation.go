@@ -139,7 +139,7 @@ func (byb *BoxByBoxAnimation) DrawOption(target wordwrap.Image) (finished bool, 
 	if byb.boxNumber != byb.page.boxCount {
 		opts = append(opts, wordwrap.BoxDrawMap(func(box wordwrap.Box, drawConfig *wordwrap.DrawConfig, stats *wordwrap.BoxPositionStats) wordwrap.Box {
 			if stats.PageBoxOffset == byb.boxNumber {
-				if box.Whitespace() {
+				if box.Whitespace() || box.Len() == 0 {
 					byb.boxNumber++
 				}
 			}
