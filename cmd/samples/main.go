@@ -61,7 +61,7 @@ func main() {
 	var points []*TextBox
 	var maxPages int
 	addTextBox := func(filename string, tb *rpgtextbox.TextBox) {
-		pages, t := NewTextBox(filename, tb, err, textBoxSize)
+		pages, t := NewTextBox(filename, tb, textBoxSize)
 		if pages > maxPages {
 			maxPages = pages
 		}
@@ -180,7 +180,7 @@ func main() {
 	log.Printf("Done")
 }
 
-func NewTextBox(filename string, tb *rpgtextbox.TextBox, err error, textBoxSize image.Point) (int, *TextBox) {
+func NewTextBox(filename string, tb *rpgtextbox.TextBox, textBoxSize image.Point) (int, *TextBox) {
 	pages, err := tb.CalculateAllPages(textBoxSize)
 	if err != nil {
 		log.Panicf("Text fetch error: %s", err)
