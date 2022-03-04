@@ -7,16 +7,29 @@ import (
 	"time"
 )
 
+// AnimationMode interface defining the optional animation. Used as an Option
 type AnimationMode interface {
+	// DrawOption draws with options.. Controls the drawing process to add extra frames and a delay to create an animation
+	// finished is true if you're on the last page
+	// userInputAccepted is if it's at the stage where you would typically accept user input (ie the animation is waiting
+	// user input, doesn't imply anything to do with the animation
+	// wait is either 0 or less, or the amount of time before the next animation phase
+	// err is err
+	// To determine if you're at the end the only way of doing it as of writing is to wait for; lastPage = true,
+	// userInputAccepted = false, wait = -1
 	DrawOption(target wordwrap.Image) (lastPage bool, userInputAccepted bool, wait time.Duration, err error)
 	Option
 }
 
+// AlphaSourceImageMapper is a draw.Image compatible source image, that allows an image to fade.
 type AlphaSourceImageMapper struct {
+	// original image
 	image.Image
+	// Multiplier How much to "fade" it by
 	Multiplier float64
 }
 
+// At a possible wrong implementation of fading a text box
 func (asim *AlphaSourceImageMapper) At(x, y int) color.Color {
 	c := asim.Image.At(x, y)
 	r, g, b, a := c.RGBA()
@@ -28,6 +41,7 @@ func (asim *AlphaSourceImageMapper) At(x, y int) color.Color {
 	}
 }
 
+// NewAlphaSourceImageMapper Creates a proxy image which will provide a source
 func NewAlphaSourceImageMapper(i image.Image, multiplier float64) image.Image {
 	return &AlphaSourceImageMapper{
 		i,
@@ -35,13 +49,17 @@ func NewAlphaSourceImageMapper(i image.Image, multiplier float64) image.Image {
 	}
 }
 
+// FadeState is the current picture fading in or out
 type FadeState int
 
 const (
+	// FadeIn picture is going to fade in or is fading in
 	FadeIn FadeState = iota
+	// FadeOut picture is going to fade out or is fading out
 	FadeOut
 )
 
+// FadeAnimation The animation for fading.
 type FadeAnimation struct {
 	tb        *TextBox
 	fadeState FadeState
@@ -52,6 +70,14 @@ type FadeAnimation struct {
 	page      *Page
 }
 
+// DrawOption draws with options.. Controls the drawing process to add extra frames, a wait time and more
+// finished is true if you're on the last page
+// userInputAccepted is if it's at the stage where you would typically accept user input (ie the animation is waiting
+// user input, doesn't imply anything to do with the animation
+// wait is either 0 or less, or the amount of time before the next animation phase
+// err is err
+// To determine if you're at the end the only way of doing it as of writing is to wait for; lastPage = true,
+// userInputAccepted = false, wait = -1
 func (f *FadeAnimation) DrawOption(target wordwrap.Image) (finished bool, userInputAccepted bool, waitTime time.Duration, err error) {
 	if f.layout == nil {
 		f.layout, f.page, err = f.tb.getNextPage(target.Bounds())
@@ -80,7 +106,7 @@ func (f *FadeAnimation) DrawOption(target wordwrap.Image) (finished bool, userIn
 	}
 
 	if doDraw {
-		done, err = f.tb.drawFrame(target, f.layout, f.page, opts...)
+		done, err = f.tb.drawPage(target, f.layout, f.page, opts...)
 	}
 	waitTime = f.duration / time.Duration(f.steps)
 	finished = done && f.step == f.steps && f.fadeState == FadeOut
@@ -98,13 +124,16 @@ func (f *FadeAnimation) DrawOption(target wordwrap.Image) (finished bool, userIn
 	return
 }
 
+// apply Set the location when used as an Option
 func (f *FadeAnimation) apply(box *TextBox) {
 	f.tb = box
 	box.animation = f
 }
 
+// forces implementation
 var _ AnimationMode = (*FadeAnimation)(nil)
 
+// NewFadeAnimation constructs FadeAnimation
 func NewFadeAnimation() *FadeAnimation {
 	duration := 2 * time.Second
 	return &FadeAnimation{
@@ -113,14 +142,24 @@ func NewFadeAnimation() *FadeAnimation {
 	}
 }
 
+// BoxByBoxAnimation is an animation style in which each non-whitespace box comes into visibility one by one
 type BoxByBoxAnimation struct {
-	tb           *TextBox
-	boxNumber    int
-	layout       *SimpleLayout
-	page         *Page
+	tb        *TextBox
+	boxNumber int
+	layout    *SimpleLayout
+	page      *Page
+	// The function to calculate the wait time between each box
 	WaitTimeFunc func(*BoxByBoxAnimation) time.Duration
 }
 
+// DrawOption draws with options.. Controls the drawing process to add extra frames, a wait time and more
+// finished is true if you're on the last page
+// userInputAccepted is if it's at the stage where you would typically accept user input (ie the animation is waiting
+// user input, doesn't imply anything to do with the animation
+// wait is either 0 or less, or the amount of time before the next animation phase
+// err is err
+// To determine if you're at the end the only way of doing it as of writing is to wait for; lastPage = true,
+// userInputAccepted = false, wait = -1
 func (byb *BoxByBoxAnimation) DrawOption(target wordwrap.Image) (finished bool, userInputAccepted bool, waitTime time.Duration, err error) {
 	if byb.layout == nil {
 		byb.layout, byb.page, err = byb.tb.getNextPage(target.Bounds())
@@ -150,7 +189,7 @@ func (byb *BoxByBoxAnimation) DrawOption(target wordwrap.Image) (finished bool, 
 		}))
 	}
 
-	done, err = byb.tb.drawFrame(target, byb.layout, byb.page, opts...)
+	done, err = byb.tb.drawPage(target, byb.layout, byb.page, opts...)
 
 	if byb.boxNumber > byb.page.boxCount {
 		finished = done
@@ -169,13 +208,17 @@ func (byb *BoxByBoxAnimation) DrawOption(target wordwrap.Image) (finished bool, 
 	return
 }
 
+// apply Set the location when used as an Option
 func (byb *BoxByBoxAnimation) apply(box *TextBox) {
 	byb.tb = box
 	box.animation = byb
 }
 
+// Enforce the interface
 var _ AnimationMode = (*BoxByBoxAnimation)(nil)
 
+// NewBoxByBoxAnimation creates an animation style where one block comes on at one time. Use WaitTimeFunc to create
+// your own timing for each block
 func NewBoxByBoxAnimation() *BoxByBoxAnimation {
 	return &BoxByBoxAnimation{
 		WaitTimeFunc: func(byb *BoxByBoxAnimation) time.Duration {
