@@ -2,17 +2,12 @@ package main
 
 import (
 	_ "embed"
-	"errors"
 	"flag"
-	"fmt"
 	"github.com/arran4/golang-rpg-textbox"
 	"github.com/arran4/golang-rpg-textbox/theme/simple"
 	"github.com/arran4/golang-rpg-textbox/util"
 	"image"
-	"io"
-	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -53,7 +48,7 @@ func main() {
 		text = string(embeddedtext)
 	} else {
 		var err error
-		text, err = GetText(*textsource)
+		text, err = util.GetText(*textsource)
 		if err != nil {
 			log.Panicf("Text fetch error: %s", err)
 		}
@@ -208,27 +203,8 @@ func (tb *TextBox) Render(maxPages int, pos image.Rectangle) {
 		}
 	}
 	ofn := filepath.Join(*outdir, tb.Filename)
-	if err := util.SaveFile(i, ofn); err != nil {
+	if err := util.SavePngFile(i, ofn); err != nil {
 		log.Panicf("Error with saving file: %s", err)
 	}
 	log.Printf("Saving %s", ofn)
-}
-
-func GetText(fn string) (string, error) {
-	if fn == "" {
-		return "", errors.New("no input file specified")
-	}
-	if fn == "-" {
-		log.Printf("STDIN mode, enter text plaese")
-		b, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	}
-	b, err := ioutil.ReadFile(fn)
-	if err != nil {
-		return "", fmt.Errorf("reading file %s: %w", fn, err)
-	}
-	return string(b), nil
 }

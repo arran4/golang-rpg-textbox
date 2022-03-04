@@ -5,6 +5,7 @@ import (
 	"golang.org/x/image/draw"
 	"image"
 	"image/color"
+	"image/gif"
 	"image/png"
 	"log"
 	"os"
@@ -28,7 +29,7 @@ func LoadImageFile(fn string) (Image, error) {
 	return i.(Image), nil
 }
 
-func SaveFile(i Image, fn string) error {
+func SavePngFile(i Image, fn string) error {
 	_ = os.MkdirAll("images", 0755)
 	fi, err := os.Create(fn)
 	if err != nil {
@@ -40,6 +41,23 @@ func SaveFile(i Image, fn string) error {
 		}
 	}()
 	if err := png.Encode(fi, i); err != nil {
+		return fmt.Errorf("png encoding: %w", err)
+	}
+	return nil
+}
+
+func SaveGifFile(fn string, options *gif.GIF) error {
+	_ = os.MkdirAll("images", 0755)
+	fi, err := os.Create(fn)
+	if err != nil {
+		return fmt.Errorf("file create: %w", err)
+	}
+	defer func() {
+		if err := fi.Close(); err != nil {
+			log.Printf("File close error: %s", err)
+		}
+	}()
+	if err := gif.EncodeAll(fi, options); err != nil {
 		return fmt.Errorf("png encoding: %w", err)
 	}
 	return nil
