@@ -6,12 +6,15 @@ import (
 	"github.com/arran4/golang-rpg-textbox"
 	"github.com/arran4/golang-rpg-textbox/theme/simple"
 	"github.com/arran4/golang-rpg-textbox/util"
-	wordwrap "github.com/arran4/golang-wordwrap"
+	"golang.org/x/image/draw"
 	"image"
+	"image/color/palette"
+	"image/gif"
 	"log"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -73,76 +76,26 @@ func main() {
 	}
 	chevronLocs := []*OptionDescription{
 		{
-			Options:     nil,
-			Description: "no-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.CenterBottomInsideTextFrame},
-			Description: "center-bottom-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.CenterBottomInsideFrame},
-			Description: "center-bottom-inside-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.CenterBottomOnFrameTextFrame},
-			Description: "center-bottom-on-frame-text-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.CenterBottomOnFrameFrame},
-			Description: "center-bottom-on-frame-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.RightBottomInsideTextFrame},
-			Description: "right-bottom-inside-text-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.RightBottomInsideFrame},
-			Description: "right-bottom-inside-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.RightBottomOnFrameTextFrame},
-			Description: "right-bottom-on-frame-text-chevron",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.RightBottomOnFrameFrame},
-			Description: "right-bottom-on-frame-chevron",
-		},
-		{
 			Options:     []rpgtextbox.Option{rpgtextbox.TextEndChevron},
 			Description: "end-of-text-chevron",
 		},
 	}
 	avatarPos := []*OptionDescription{
 		{
-			Options:     nil,
-			Description: "no-avatar",
-		},
-		{
 			Options:     []rpgtextbox.Option{rpgtextbox.LeftAvatar},
 			Description: "left-avatar",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.RightAvatar},
-			Description: "right-avatar",
 		},
 	}
 	avatarScale := []*OptionDescription{
 		{
-			Options:     nil,
-			Description: "no-scaling",
-		},
-		{
 			Options:     []rpgtextbox.Option{rpgtextbox.CenterAvatar},
 			Description: "center-avatar",
 		},
+	}
+	animations := []*OptionDescription{
 		{
-			Options:     []rpgtextbox.Option{rpgtextbox.NearestNeighbour},
-			Description: "nearest-neighbour",
-		},
-		{
-			Options:     []rpgtextbox.Option{rpgtextbox.ApproxBiLinear},
-			Description: "approx-biLinear",
+			Options:     []rpgtextbox.Option{rpgtextbox.NewFadeAnimation()},
+			Description: "fade-animation",
 		},
 	}
 	for _, o1 := range chevronLocs {
@@ -161,19 +114,26 @@ func main() {
 				oa = oa[:o2p]
 				oas = oas[:o2sp]
 				oa = append(oa, o3.Options...)
-				oas = append(oas, o2.Description)
-				addTextBox(strings.Join(oas, "+")+".png", Must(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, oa...)))
+				oas = append(oas, o3.Description)
+				o3p := len(oa)
+				o3sp := len(oas)
+				for _, o4 := range animations {
+					oa = oa[:o3p]
+					oas = oas[:o3sp]
+					oa = append(oa, o4.Options...)
+					oas = append(oas, o4.Description)
+					addTextBox(strings.Join(oas, "+")+".gif", Must(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, oa...)))
+				}
 			}
 		}
 	}
 
-	pos := image.Rect(0, 0, *width, *height)
 	wg := sync.WaitGroup{}
 	for i := range points {
 		wg.Add(1)
 		go func(tb *TextBox) {
 			defer wg.Done()
-			tb.Render(maxPages, pos)
+			tb.Render()
 		}(points[i])
 	}
 	wg.Wait()
@@ -193,19 +153,38 @@ func NewTextBox(filename string, tb *rpgtextbox.TextBox, err error, textBoxSize 
 	return pages, t
 }
 
-func (tb *TextBox) Render(maxPages int, pos image.Rectangle) {
-	i := image.NewRGBA(image.Rect(0, 0, *width, *height*maxPages))
-	for page := 0; page < maxPages; page++ {
-		if tb.pages > page {
-			target := pos.Add(image.Pt(0, *height*page))
-			if _, err := tb.rtb.DrawNextPageFrame(i.SubImage(target).(wordwrap.Image)); err != nil {
-				log.Panicf("Draw next frame error: %s", err)
+func (tb *TextBox) Render() {
+	gifo := &gif.GIF{}
+	f := 0
+	page := 0
+	for {
+		i := image.NewRGBA(image.Rect(0, 0, *width, *height))
+		if done, ui, w, err := tb.rtb.DrawNextFrame(i); err != nil {
+			log.Panicf("Draw next frame error: %s", err)
+		} else if done && !ui && w <= 0 {
+			break
+			//} else if ui {
+			//	break
+		} else {
+			if w <= 0 {
+				w = time.Second / 2
 			}
+			f++
+			if ui && w <= 0 {
+				page++
+			}
+			log.Printf("Adding frame %d for page %d", f, page)
+			bounds := i.Bounds()
+			palettedImage := image.NewPaletted(bounds, palette.Plan9)
+			draw.Draw(palettedImage, palettedImage.Rect, i, bounds.Min, draw.Over)
+			gifo.Image = append(gifo.Image, palettedImage)
+			gifo.Delay = append(gifo.Delay, int(w/(time.Second/100)))
 		}
 	}
 	ofn := filepath.Join(*outdir, tb.Filename)
-	if err := util.SavePngFile(i, ofn); err != nil {
+	log.Printf("Saving %s", ofn)
+	if err := util.SaveGifFile(ofn, gifo); err != nil {
 		log.Panicf("Error with saving file: %s", err)
 	}
-	log.Printf("Saving %s", ofn)
+	log.Printf("Saved %s", ofn)
 }
