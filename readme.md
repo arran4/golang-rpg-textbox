@@ -209,8 +209,8 @@ There are a bunch of options, options are used in the following way:
 | Option | Example Image |
 | --- | --- |
 | `rpgtextbox.CenterAvatar` | ![](images/center-bottom-chevron+left-avatar+center-avatar.png) |
-| `rpgtextbox.NearestNeighbour` | ![](images/center-bottom-chevron+right-avatar+nearest-neighbour.png) |
-| `rpgtextbox.ApproxBiLinear` | ![](images/center-bottom-chevron+right-avatar+approx-biLinear.png) |
+| `rpgtextbox.NearestNeighbour` | ![](images/center-bottom-chevron+left-avatar+nearest-neighbour.png) |
+| `rpgtextbox.ApproxBiLinear` | ![](images/center-bottom-chevron+left-avatar+approx-biLinear.png) |
 
 ## Animation Options
 
