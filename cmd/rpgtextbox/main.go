@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/arran4/golang-rpg-textbox"
 	"github.com/arran4/golang-rpg-textbox/theme/cache"
-	"github.com/arran4/golang-rpg-textbox/theme/simple"
+	"github.com/arran4/golang-rpg-textbox/theme/fromdirpng"
 	"github.com/arran4/golang-rpg-textbox/util"
 	"golang.org/x/image/draw"
 	"image"
@@ -19,6 +19,10 @@ import (
 var (
 	width       = flag.Int("width", 600, "Doc width")
 	height      = flag.Int("height", 150, "Doc height")
+	themedir    = flag.String("themedir", "./theme", "Directory to find the theme")
+	fontname    = flag.String("font", "goregular", "Text font")
+	dpi         = flag.Float64("dpi", 75, "Doc dpi")
+	fontsize    = flag.Float64("size", 16, "font size")
 	textsource  = flag.String("text", "", "File in, or - for std input")
 	outPrefix   = flag.String("out", "out-", "Prefix of filename to output")
 	chevronLoc  = flag.String("chevron", "", "Use help for list")
@@ -41,7 +45,12 @@ func main() {
 	if err != nil {
 		log.Panicf("Text fetch error: %s", err)
 	}
-	t, err := cache.New(simple.New())
+	gr, err := util.OpenFont(*fontname)
+	if err != nil {
+		log.Panicf("Error opening font %s: %s", *fontname, err)
+	}
+	grf := util.GetFontFace(*fontsize, *dpi, gr)
+	t, err := cache.New(fromdirpng.New(*themedir, grf))
 	if err != nil {
 		log.Panicf("Theme fetch error: %s", err)
 	}
