@@ -67,10 +67,6 @@ func main() {
 		}
 		points = append(points, t)
 	}
-	type OptionDescription struct {
-		Options     []rpgtextbox.Option
-		Description string
-	}
 	chevronLocs := []*OptionDescription{
 		{
 			Options:     nil,
@@ -145,28 +141,9 @@ func main() {
 			Description: "approx-biLinear",
 		},
 	}
-	for _, o1 := range chevronLocs {
-		oa := append([]rpgtextbox.Option{}, o1.Options...)
-		oas := append([]string{}, o1.Description)
-		o1p := len(oa)
-		o1sp := len(oas)
-		for _, o2 := range avatarPos {
-			oa = oa[:o1p]
-			oas = oas[:o1sp]
-			oa = append(oa, o2.Options...)
-			oas = append(oas, o2.Description)
-			o2p := len(oa)
-			o2sp := len(oas)
-			for _, o3 := range avatarScale {
-				oa = oa[:o2p]
-				oas = oas[:o2sp]
-				oa = append(oa, o3.Options...)
-				oas = append(oas, o2.Description)
-				addTextBox(strings.Join(oas, "+")+".png", Must(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, oa...)))
-			}
-		}
-	}
-
+	OptionDescriptionBuild(func(oas []string, oa []rpgtextbox.Option) {
+		addTextBox(strings.Join(oas, "+")+".png", Must(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, oa...)))
+	}, []string{}, []rpgtextbox.Option{}, chevronLocs, avatarPos, avatarScale)
 	pos := image.Rect(0, 0, *width, *height)
 	wg := sync.WaitGroup{}
 	for i := range points {
@@ -178,6 +155,27 @@ func main() {
 	}
 	wg.Wait()
 	log.Printf("Done")
+}
+
+type OptionDescription struct {
+	Options     []rpgtextbox.Option
+	Description string
+}
+
+func OptionDescriptionBuild(addTextBox func(oas []string, oa []rpgtextbox.Option), oas []string, oa []rpgtextbox.Option, ods ...[]*OptionDescription) {
+	if len(ods) == 0 {
+		addTextBox(oas, oa)
+		return
+	}
+	oap := len(oa)
+	oasp := len(oas)
+	for _, o := range ods[0] {
+		oa = oa[:oap]
+		oas = oas[:oasp]
+		oa = append(oa, o.Options...)
+		oas = append(oas, o.Description)
+		OptionDescriptionBuild(addTextBox, oas[:], oa[:], ods[1:]...)
+	}
 }
 
 func NewTextBox(filename string, tb *rpgtextbox.TextBox, textBoxSize image.Point) (int, *TextBox) {
