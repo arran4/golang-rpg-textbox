@@ -226,3 +226,97 @@ func NewBoxByBoxAnimation() *BoxByBoxAnimation {
 		},
 	}
 }
+
+// LetterByLetterAnimation is an animation style in which each non-whitespace letter comes into visibility one by one
+type LetterByLetterAnimation struct {
+	tb           *TextBox
+	boxNumber    int
+	letterNumber int
+	layout       *SimpleLayout
+	page         *Page
+	// The function to calculate the wait time between each box
+	WaitTimeFunc func(*LetterByLetterAnimation) time.Duration
+}
+
+// DrawOption draws with options.. Controls the drawing process to add extra frames, a wait time and more
+// finished is true if you're on the last page
+// userInputAccepted is if it's at the stage where you would typically accept user input (ie the animation is waiting
+// user input, doesn't imply anything to do with the animation
+// wait is either 0 or less, or the amount of time before the next animation phase
+// err is err
+// To determine if you're at the end the only way of doing it as of writing is to wait for; lastPage = true,
+// userInputAccepted = false, wait = -1
+func (lyl *LetterByLetterAnimation) DrawOption(target wordwrap.Image) (finished bool, userInputAccepted bool, waitTime time.Duration, err error) {
+	if lyl.layout == nil {
+		lyl.layout, lyl.page, err = lyl.tb.getNextPage(target.Bounds())
+		if err != nil {
+			return
+		}
+		if lyl.layout == nil || lyl.page == nil {
+			finished = true
+			waitTime = -1
+			return
+		}
+	}
+	var done bool
+	var opts []wordwrap.DrawOption
+
+	if lyl.boxNumber != lyl.page.boxCount {
+		opts = append(opts, wordwrap.BoxDrawMap(func(box wordwrap.Box, drawConfig *wordwrap.DrawConfig, stats *wordwrap.BoxPositionStats) wordwrap.Box {
+			if stats.PageBoxOffset == lyl.boxNumber {
+				if lyl.letterNumber == 0 {
+					lyl.letterNumber++
+					return nil
+				} else if box.Whitespace() || lyl.letterNumber >= len(box.TextValue()) {
+					lyl.boxNumber++
+					lyl.letterNumber = 0
+				} else if lyl.letterNumber <= len(box.TextValue()) {
+					b, _ := wordwrap.NewSimpleTextBox(box.FontDrawer(), box.TextValue()[:lyl.letterNumber])
+					lyl.letterNumber++
+					return b
+				}
+			}
+			if stats.PageBoxOffset < lyl.boxNumber {
+				return box
+			}
+			return nil
+		}))
+	}
+
+	done, err = lyl.tb.drawPage(target, lyl.layout, lyl.page, opts...)
+
+	if lyl.boxNumber >= lyl.page.boxCount {
+		finished = done
+		userInputAccepted = true
+		lyl.boxNumber = 0
+		lyl.letterNumber = 0
+		lyl.layout = nil
+		waitTime = -1
+	} else {
+		if lyl.WaitTimeFunc != nil {
+			waitTime = lyl.WaitTimeFunc(lyl)
+		} else {
+			waitTime = time.Second / 10
+		}
+	}
+	return
+}
+
+// apply Set the location when used as an Option
+func (lyl *LetterByLetterAnimation) apply(box *TextBox) {
+	lyl.tb = box
+	box.animation = lyl
+}
+
+// Enforce the interface
+var _ AnimationMode = (*LetterByLetterAnimation)(nil)
+
+// NewLetterByLetterAnimation creates an animation style where one block comes on at one time. Use WaitTimeFunc to create
+// your own timing for each block
+func NewLetterByLetterAnimation() *LetterByLetterAnimation {
+	return &LetterByLetterAnimation{
+		WaitTimeFunc: func(byb *LetterByLetterAnimation) time.Duration {
+			return time.Second / 10
+		},
+	}
+}

@@ -101,6 +101,10 @@ func main() {
 			Options:     []rpgtextbox.Option{rpgtextbox.NewBoxByBoxAnimation()},
 			Description: "box-by-box-animation",
 		},
+		{
+			Options:     []rpgtextbox.Option{rpgtextbox.NewLetterByLetterAnimation()},
+			Description: "letter-by-letter-animation",
+		},
 	}
 	for _, o1 := range chevronLocs {
 		oa := append([]rpgtextbox.Option{}, o1.Options...)
@@ -177,7 +181,7 @@ func (tb *TextBox) Render() {
 			if ui && w <= 0 {
 				page++
 			}
-			log.Printf("Adding frame %d for page %d", f, page)
+			log.Printf("%s: Adding frame %d for page %d", tb.Filename, f, page)
 			bounds := i.Bounds()
 			palettedImage := image.NewPaletted(bounds, palette.Plan9)
 			draw.Draw(palettedImage, palettedImage.Rect, i, bounds.Min, draw.Over)
