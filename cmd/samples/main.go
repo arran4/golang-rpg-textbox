@@ -142,9 +142,26 @@ func main() {
 			Description: "approx-biLinear",
 		},
 	}
+	namePos := []*OptionDescription{
+		{
+			Options:     []rpgtextbox.Option{rpgtextbox.Name("Player 1"), rpgtextbox.NameTopLeftAboveTextInFrame},
+			Description: "name-top-left-text",
+		},
+		{
+			Options:     []rpgtextbox.Option{rpgtextbox.Name("Player 1"), rpgtextbox.NameTopCenterInFrame},
+			Description: "name-top-center",
+		},
+		{
+			Options:     []rpgtextbox.Option{rpgtextbox.Name("Player 1"), rpgtextbox.NameLeftAboveAvatarInFrame},
+			Description: "name-left-above-avatar",
+		},
+	}
 	OptionDescriptionBuild(func(oas []string, oa []rpgtextbox.Option) {
 		addTextBox(strings.Join(oas, "+")+".png", Must(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, oa...)))
 	}, []string{}, []rpgtextbox.Option{}, chevronLocs, avatarPos, avatarScale)
+	OptionDescriptionBuild(func(oas []string, oa []rpgtextbox.Option) {
+		addTextBox(strings.Join(oas, "+")+".png", Must(rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, oa...)))
+	}, []string{}, []rpgtextbox.Option{}, chevronLocs[len(chevronLocs)-2:], avatarPos, avatarScale[1:2], namePos)
 	pos := image.Rect(0, 0, *width, *height)
 	wg := sync.WaitGroup{}
 	for i := range points {

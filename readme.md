@@ -225,7 +225,10 @@ There are a bunch of options, options are used in the following way:
 | Option | Example Image / Description |
 | --- | --- |
 | `rpgtextbox.Avatar(i image.Image)` | Replace the theme avatar for a special purpose avatar |
-| `rpgtextbox.Name(name string)` | Add a character name (TODO) |
+| `rpgtextbox.Name(name string)` |  |
+| `rpgtextbox.Name(name string), rpgtextbox.NameTopLeftAboveTextInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-left-above-avatar.png) |
+| `rpgtextbox.Name(name string), rpgtextbox.NameTopCenterInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-top-center.png) |
+| `rpgtextbox.Name(name string), rpgtextbox.NameLeftAboveAvatarInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-top-left-text.png) |
 
 # License 
 

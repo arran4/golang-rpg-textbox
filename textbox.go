@@ -29,6 +29,25 @@ func (al AvatarLocations) apply(box *TextBox) {
 	box.avatarLocation = al
 }
 
+// NamePositions Positioning locations for the name tag
+type NamePositions int
+
+const (
+	// NoName default show no name tag
+	NoName NamePositions = iota
+	// NameTopLeftAboveTextInFrame on the left
+	NameTopLeftAboveTextInFrame
+	// NameTopCenterInFrame on the left
+	NameTopCenterInFrame
+	// NameLeftAboveAvatarInFrame on the right
+	NameLeftAboveAvatarInFrame
+)
+
+// apply Set the location when used as an Option
+func (al NamePositions) apply(box *TextBox) {
+	box.namePosition = al
+}
+
 // MoreChevronLocations Position to put the "more text" marker
 type MoreChevronLocations int
 
@@ -132,6 +151,10 @@ type TextBox struct {
 	postDraw []PostDrawer
 	// animation the selected animation style
 	animation AnimationMode
+	// namePosition the location of the name tag
+	namePosition NamePositions
+	// nameBox is the image of the name tag
+	nameBox wordwrap.Box
 }
 
 // Option are the configuration arguments
@@ -139,12 +162,13 @@ type Option interface {
 	apply(*TextBox)
 }
 
-// Name the name of the character to show (TODO)
+// Name the name of the character to show
 type Name string
 
 // apply Set the location when used as an Option
 func (n Name) apply(box *TextBox) {
 	box.name = n
+	box.nameBox, _ = wordwrap.NewSimpleTextBox(box.theme.FontDrawer(), string(n))
 }
 
 // avatar An avatar image overwrite of the theme default
@@ -230,6 +254,8 @@ type Layout interface {
 	AvatarRect() image.Rectangle
 	// ChevronRect the position of the chevron if given the correct position options
 	ChevronRect() image.Rectangle
+	// NameRect the position of the name if given the correct position options
+	NameRect() image.Rectangle
 }
 
 // SimpleLayout simple as possible layout. Keeps it mostly what most use-cases would suggest
@@ -242,6 +268,16 @@ type SimpleLayout struct {
 	avatarRect image.Rectangle
 	// ChevronRect the position of the chevron if given the correct position options
 	chevronRect image.Rectangle
+	// nameRect optional position of the name rect
+	nameRect image.Rectangle
+}
+
+// Interface enforcement
+var _ Layout = (*SimpleLayout)(nil)
+
+// NameRect where the name rect belongs
+func (sl *SimpleLayout) NameRect() image.Rectangle {
+	return sl.nameRect
 }
 
 // TextRect the area the text will be boxed into
@@ -272,6 +308,25 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 	} else {
 		l.centerRect = centerRect
 		l.textRect = centerRect
+	}
+	if tb.nameBox != nil {
+		m := tb.nameBox.MetricsRect()
+		a := tb.nameBox.AdvanceRect()
+		height := (m.Ascent + m.Descent).Ceil()
+		width := a.Ceil()
+		l.nameRect = image.Rect(0, 0, width, height)
+		switch tb.namePosition {
+		case NoName:
+		case NameTopCenterInFrame:
+			l.nameRect.Min.X = l.centerRect.Min.X + (l.centerRect.Dx()-l.nameRect.Dx())/2
+			l.nameRect.Max.X = l.nameRect.Min.X + width
+			fallthrough
+		default:
+			l.nameRect.Min.Y = l.centerRect.Min.Y
+			l.nameRect.Max.Y = l.centerRect.Min.Y + height
+			l.centerRect.Min.Y += height
+			l.textRect.Min = l.textRect.Min.Add(image.Pt(0, height))
+		}
 	}
 	l.avatarRect = tb.Avatar().Bounds()
 	switch tb.avatarFit {
@@ -310,6 +365,18 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 		}
 	default:
 		return nil, fmt.Errorf("unknown avatar location %v", tb.avatarLocation)
+	}
+	if tb.nameBox != nil {
+		switch tb.namePosition {
+		case NameLeftAboveAvatarInFrame:
+			if tb.avatarLocation != NoAvatar {
+				l.nameRect = l.nameRect.Add(image.Pt(l.avatarRect.Min.X, 0))
+				break
+			}
+			fallthrough
+		case NameTopLeftAboveTextInFrame:
+			l.nameRect = l.nameRect.Add(image.Pt(l.textRect.Min.X, 0))
+		}
 	}
 	l.chevronRect = tb.theme.Chevron().Bounds()
 	switch tb.moreChevronLocation {
@@ -441,6 +508,9 @@ func (tb *TextBox) drawPage(target wordwrap.Image, layout *SimpleLayout, page *P
 	if tb.HasNext() {
 		tb.drawMoreChevron(target, layout, opts...)
 	}
+	if tb.name != "" {
+		tb.drawNameTag(target, layout, opts...)
+	}
 	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min, opts...); err != nil {
 		return false, err
 	}
@@ -490,6 +560,27 @@ func (tb *TextBox) drawMoreChevron(target wordwrap.Image, layout Layout, options
 	case NoMoreChevron, TextEndChevron:
 	default:
 		draw.Draw(target.SubImage(layout.ChevronRect()).(wordwrap.Image), layout.ChevronRect(), cti, ctr.Min, draw.Over)
+	}
+}
+
+// drawNameTag as expected
+func (tb *TextBox) drawNameTag(target wordwrap.Image, layout Layout, options ...wordwrap.DrawOption) {
+	if tb.nameBox != nil {
+		switch tb.namePosition {
+		case NoName:
+		default:
+			m := tb.nameBox.MetricsRect()
+			config := wordwrap.NewDrawConfig(options...)
+			var bb wordwrap.Box = tb.nameBox
+			if config.BoxDrawMap != nil {
+				bb = config.ApplyMap(bb, &wordwrap.BoxPositionStats{
+					LinePositionStats: &wordwrap.LinePositionStats{},
+				})
+			}
+			if bb != nil {
+				bb.DrawBox(target.SubImage(layout.NameRect()).(wordwrap.Image), m.Ascent, config)
+			}
+		}
 	}
 }
 

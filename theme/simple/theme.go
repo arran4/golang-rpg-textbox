@@ -71,7 +71,7 @@ func (t *t) FontFace() font.Face {
 
 func (t *t) FontDrawer() *font.Drawer {
 	return &font.Drawer{
-		Src:  nil,
+		Src:  image.NewUniform(image.Black),
 		Face: t.FontFace(),
 	}
 }
