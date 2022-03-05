@@ -1,8 +1,8 @@
 project_name: simplewraptoimage
 builds:
   -
-    binary: "samples"
-    dir: cmd/samples
+    binary: "rpgtextbox"
+    dir: cmd/rpgtextbox
     env:
       - CGO_ENABLED=0
     goos:
@@ -14,8 +14,8 @@ builds:
       - arm
       - arm64
     goarm:
-      - 6
-      - 7
+      - "6"
+      - "7"
 archives:
   -
     format_overrides:
