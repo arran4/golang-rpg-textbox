@@ -195,7 +195,7 @@ There are a bunch of options, options are used in the following way:
 | `rpgtextbox.RightBottomInsideFrame` | ![](images/right-bottom-inside-chevron+left-avatar+approx-biLinear.png) |
 | `rpgtextbox.RightBottomOnFrameTextFrame` | ![](images/center-bottom-on-frame-text-chevron+left-avatar+center-avatar.png) |
 | `rpgtextbox.RightBottomOnFrameFrame` | ![](images/center-bottom-on-frame-chevron+no-avatar+no-scaling.png) |
-| `rpgtextbox.TextEndChevron` | ![](images/end-of-text-chevron+left-avatar+center-avatar+fade-animation.gif) |
+| `rpgtextbox.TextEndChevron` | ![](images/end-of-text-chevron+left-avatar+approx-biLinear.png) |
 
 ## Avatar Location Options
 
