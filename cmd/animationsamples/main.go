@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"flag"
 	"github.com/arran4/golang-rpg-textbox"
+	"github.com/arran4/golang-rpg-textbox/theme/cache"
 	"github.com/arran4/golang-rpg-textbox/theme/simple"
 	"github.com/arran4/golang-rpg-textbox/util"
 	"golang.org/x/image/draw"
@@ -57,7 +58,7 @@ func main() {
 			log.Panicf("Text fetch error: %s", err)
 		}
 	}
-	t, err := simple.New()
+	t, err := cache.New(simple.New())
 	if err != nil {
 		log.Panicf("Theme fetch error: %s", err)
 	}

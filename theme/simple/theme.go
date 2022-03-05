@@ -20,12 +20,9 @@ var (
 	AvatarBytes []byte
 )
 
-type t struct {
-	chevron image.Image
-	frame   image.Image
-	person  image.Image
-}
+type t struct{}
 
+// New of my simple drawn theme. Provided for development purposes please substitute with your own
 func New() (*t, error) {
 	return &t{}, nil
 }
@@ -34,25 +31,19 @@ var _ theme.Theme = (*t)(nil)
 var _ theme.Frame = (*t)(nil)
 
 func (t *t) Chevron() image.Image {
-	if t.chevron == nil {
-		var err error
-		t.chevron, err = png.Decode(bytes.NewReader(ChevronBytes))
-		if err != nil {
-			panic(err)
-		}
+	chevron, err := png.Decode(bytes.NewReader(ChevronBytes))
+	if err != nil {
+		panic(err)
 	}
-	return t.chevron
+	return chevron
 }
 
 func (t *t) Frame() image.Image {
-	if t.frame == nil {
-		var err error
-		t.frame, err = png.Decode(bytes.NewReader(FrameBytes))
-		if err != nil {
-			panic(err)
-		}
+	frame, err := png.Decode(bytes.NewReader(FrameBytes))
+	if err != nil {
+		panic(err)
 	}
-	return t.frame
+	return frame
 }
 
 func (t *t) FrameCenter() image.Rectangle {
@@ -60,14 +51,11 @@ func (t *t) FrameCenter() image.Rectangle {
 }
 
 func (t *t) Avatar() image.Image {
-	if t.person == nil {
-		var err error
-		t.person, err = png.Decode(bytes.NewReader(AvatarBytes))
-		if err != nil {
-			panic(err)
-		}
+	person, err := png.Decode(bytes.NewReader(AvatarBytes))
+	if err != nil {
+		panic(err)
 	}
-	return t.person
+	return person
 }
 
 func (t *t) FontFace() font.Face {

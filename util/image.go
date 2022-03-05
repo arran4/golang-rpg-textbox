@@ -6,12 +6,12 @@ import (
 	"image"
 	"image/color"
 	"image/gif"
+	_ "image/jpeg"
 	"image/png"
 	"log"
 	"os"
 )
 
-//nolint:golint,unused
 func LoadImageFile(fn string) (Image, error) {
 	fi, err := os.Open(fn)
 	if err != nil {
@@ -22,9 +22,9 @@ func LoadImageFile(fn string) (Image, error) {
 			log.Printf("File close error: %s", err)
 		}
 	}()
-	i, err := png.Decode(fi)
+	i, _, err := image.Decode(fi)
 	if err != nil {
-		return nil, fmt.Errorf("png encoding: %w", err)
+		return nil, fmt.Errorf("image encoding: %w", err)
 	}
 	return i.(Image), nil
 }
