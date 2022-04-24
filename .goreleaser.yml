@@ -1,6 +1,7 @@
-project_name: simplewraptoimage
+project_name: golang-rpg-textbox
 builds:
   -
+    id: "rpgtextbox"
     binary: "rpgtextbox"
     dir: cmd/rpgtextbox
     env:
