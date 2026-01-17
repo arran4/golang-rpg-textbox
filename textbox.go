@@ -3,13 +3,14 @@ package rpgtextbox
 import (
 	"errors"
 	"fmt"
-	"github.com/arran4/golang-frame"
-	"github.com/arran4/golang-rpg-textbox/theme"
-	"github.com/arran4/golang-rpg-textbox/util"
-	"github.com/arran4/golang-wordwrap"
-	"golang.org/x/image/draw"
 	"image"
 	"time"
+
+	frame "github.com/arran4/golang-frame"
+	"github.com/arran4/golang-rpg-textbox/theme"
+	"github.com/arran4/golang-rpg-textbox/util"
+	wordwrap "github.com/arran4/golang-wordwrap"
+	"golang.org/x/image/draw"
 )
 
 // AvatarLocations Positioning locations for avatars
@@ -571,7 +572,7 @@ func (tb *TextBox) drawNameTag(target wordwrap.Image, layout Layout, options ...
 		default:
 			m := tb.nameBox.MetricsRect()
 			config := wordwrap.NewDrawConfig(options...)
-			var bb wordwrap.Box = tb.nameBox
+			var bb = tb.nameBox
 			if config.BoxDrawMap != nil {
 				bb = config.ApplyMap(bb, &wordwrap.BoxPositionStats{
 					LinePositionStats: &wordwrap.LinePositionStats{},
