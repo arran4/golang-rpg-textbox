@@ -204,6 +204,19 @@ func (a *avatar) apply(box *TextBox) {
 	box.avatar = a
 }
 
+type wordwrapOption struct {
+	opt wordwrap.WrapperOption
+}
+
+func (w *wordwrapOption) apply(box *TextBox) {
+	box.wordwrapOptions = append(box.wordwrapOptions, w.opt)
+}
+
+// WithWordwrapOption allows passing wordwrap options as TextBox options
+func WithWordwrapOption(opt wordwrap.WrapperOption) Option {
+	return &wordwrapOption{opt: opt}
+}
+
 // NewSimpleTextBox as simple as possible constructor for the RPG TextBox,
 // Theme is required
 // destSize can be modified on a per frame basis but is the intended size of hte image
