@@ -20,10 +20,17 @@ func BenchmarkChevron(b *testing.B) {
 	}
 }
 
-func TestNew_MissingFiles(t *testing.T) {
+func TestChevron_MissingFiles(t *testing.T) {
 	dir := t.TempDir() // Empty directory
-	_, err := New(dir, nil)
-	if err == nil {
-		t.Error("Expected error when creating theme from empty directory, got nil")
+	theme, err := New(dir, nil)
+	if err != nil {
+		t.Fatalf("Expected no error when creating theme from empty directory (lazy loading), got %v", err)
 	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic when accessing missing file, got none")
+		}
+	}()
+	_ = theme.Chevron()
 }

@@ -7,11 +7,13 @@ import (
 	"golang.org/x/image/font"
 	"image"
 	"path/filepath"
+	"sync"
 )
 
 type t struct {
 	dir      string
 	fontFace font.Face
+	mu       sync.Mutex
 	chevron  image.Image
 	frame    image.Image
 	avatar   image.Image
@@ -19,24 +21,9 @@ type t struct {
 
 // New creates a new theme from a directory location, it assumes all files are PNG.
 func New(dir string, fontFace font.Face) (*t, error) {
-	chevron, err := util.LoadImageFile(filepath.Join(dir, "chevron.png"))
-	if err != nil {
-		return nil, err
-	}
-	frame, err := util.LoadImageFile(filepath.Join(dir, "frame.png"))
-	if err != nil {
-		return nil, err
-	}
-	avatar, err := util.LoadImageFile(filepath.Join(dir, "avatar.png"))
-	if err != nil {
-		return nil, err
-	}
 	return &t{
 		dir:      dir,
 		fontFace: fontFace,
-		chevron:  chevron,
-		frame:    frame,
-		avatar:   avatar,
 	}, nil
 }
 
@@ -44,11 +31,31 @@ var _ theme.Theme = (*t)(nil)
 var _ theme.Frame = (*t)(nil)
 
 func (t *t) Chevron() image.Image {
-	return t.chevron
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.chevron != nil {
+		return t.chevron
+	}
+	chevron, err := util.LoadImageFile(filepath.Join(t.dir, "chevron.png"))
+	if err != nil {
+		panic(err)
+	}
+	t.chevron = chevron
+	return chevron
 }
 
 func (t *t) Frame() image.Image {
-	return t.frame
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.frame != nil {
+		return t.frame
+	}
+	frame, err := util.LoadImageFile(filepath.Join(t.dir, "frame.png"))
+	if err != nil {
+		panic(err)
+	}
+	t.frame = frame
+	return frame
 }
 
 func (t *t) FrameCenter() image.Rectangle {
@@ -56,7 +63,17 @@ func (t *t) FrameCenter() image.Rectangle {
 }
 
 func (t *t) Avatar() image.Image {
-	return t.avatar
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.avatar != nil {
+		return t.avatar
+	}
+	person, err := util.LoadImageFile(filepath.Join(t.dir, "avatar.png"))
+	if err != nil {
+		panic(err)
+	}
+	t.avatar = person
+	return person
 }
 
 func (t *t) FontFace() font.Face {
