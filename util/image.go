@@ -70,12 +70,12 @@ type Image interface {
 }
 
 func DrawBox(i draw.Image, s image.Rectangle) {
-	for x := s.Min.X; x < s.Max.X; x++ {
-		i.Set(x, s.Min.Y, color.Black)
-		i.Set(x, s.Max.Y-1, color.Black)
-	}
-	for y := s.Min.Y; y < s.Max.Y; y++ {
-		i.Set(s.Min.X, y, color.Black)
-		i.Set(s.Max.X-1, y, color.Black)
-	}
+	// Top
+	draw.Draw(i, image.Rect(s.Min.X, s.Min.Y, s.Max.X, s.Min.Y+1), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	// Bottom
+	draw.Draw(i, image.Rect(s.Min.X, s.Max.Y-1, s.Max.X, s.Max.Y), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	// Left
+	draw.Draw(i, image.Rect(s.Min.X, s.Min.Y, s.Min.X+1, s.Max.Y), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	// Right
+	draw.Draw(i, image.Rect(s.Max.X-1, s.Min.Y, s.Max.X, s.Max.Y), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 }
