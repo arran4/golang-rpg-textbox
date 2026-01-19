@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"log"
 	"time"
 
 	frame "github.com/arran4/golang-frame"
@@ -239,10 +240,6 @@ func NewRichTextBox(th theme.Theme, args ...interface{}) (*TextBox, error) {
 			if !foundDestSize {
 				destSize = a
 				foundDestSize = true
-			} else {
-				// Treat second point as...? Or just error?
-				// For now assume only one point is passed which is destSize
-				// But wordwrap might accept points? No.
 			}
 		default:
 			wordwrapArgs = append(wordwrapArgs, arg)
@@ -250,9 +247,7 @@ func NewRichTextBox(th theme.Theme, args ...interface{}) (*TextBox, error) {
 	}
 
 	if !foundDestSize {
-		// Default or error?
-		// Existing code assumed destSize was passed.
-		// Let's assume 0,0 is valid if not passed, or caller checks.
+		log.Printf("Warning: destSize not found in NewRichTextBox arguments")
 	}
 
 	// Add Theme Font Face to wordwrap args if not present?
@@ -627,7 +622,7 @@ func (b *BoxShape) PointIn(x, y int) bool {
 }
 
 func (b *BoxShape) String() string {
-	return fmt.Sprintf("Box(%s)", b.Box.TextValue())
+	return fmt.Sprintf("Box(%s)", b.TextValue())
 }
 
 func (b *BoxShape) ID() interface{} {
