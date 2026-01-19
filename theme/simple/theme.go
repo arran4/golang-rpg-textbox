@@ -3,6 +3,8 @@ package simple
 import (
 	"bytes"
 	_ "embed"
+	"sync"
+
 	"github.com/arran4/golang-rpg-textbox/theme"
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font"
@@ -18,6 +20,9 @@ var (
 	FrameBytes []byte
 	//go:embed "avatar.png"
 	AvatarBytes []byte
+
+	fontFaceOnce sync.Once
+	fontFace     font.Face
 )
 
 type t struct{}
@@ -59,14 +64,17 @@ func (t *t) Avatar() image.Image {
 }
 
 func (t *t) FontFace() font.Face {
-	f, err := truetype.Parse(goregular.TTF)
-	if err != nil {
-		panic(err)
-	}
-	return truetype.NewFace(f, &truetype.Options{
-		Size: 16,
-		DPI:  75,
+	fontFaceOnce.Do(func() {
+		f, err := truetype.Parse(goregular.TTF)
+		if err != nil {
+			panic(err)
+		}
+		fontFace = truetype.NewFace(f, &truetype.Options{
+			Size: 16,
+			DPI:  75,
+		})
 	})
+	return fontFace
 }
 
 func (t *t) FontDrawer() *font.Drawer {
