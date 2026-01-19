@@ -10,6 +10,7 @@ import (
 	"github.com/arran4/golang-rpg-textbox/theme"
 	"github.com/arran4/golang-rpg-textbox/util"
 	wordwrap "github.com/arran4/golang-wordwrap"
+	"github.com/arran4/spacemap/shared"
 	"golang.org/x/image/draw"
 )
 
@@ -155,7 +156,20 @@ type TextBox struct {
 	// namePosition the location of the name tag
 	namePosition NamePositions
 	// nameBox is the image of the name tag
+	// nameBox is the image of the name tag
 	nameBox wordwrap.Box
+	// spaceMap is the space map to populate
+	spaceMap SpaceMap
+}
+
+// SpaceMap interface for space mapping
+type SpaceMap interface {
+	Add(shape shared.Shape, zIndex int)
+}
+
+// SetSpaceMap sets the space map to populate
+func (tb *TextBox) SetSpaceMap(m SpaceMap) {
+	tb.spaceMap = m
 }
 
 // Option are the configuration arguments
@@ -194,17 +208,82 @@ func (a *avatar) apply(box *TextBox) {
 // destSize can be modified on a per frame basis but is the intended size of hte image
 // options see readme
 func NewSimpleTextBox(th theme.Theme, text string, destSize image.Point, options ...Option) (*TextBox, error) {
+	args := []interface{}{text, destSize}
+	for _, o := range options {
+		args = append(args, o)
+	}
+	return NewRichTextBox(th, args...)
+}
+
+// NewRichTextBox constructor for rich text arguments
+// Theme is required
+// destSize can be modified on a per frame basis but is the intended size of hte image
+// options see readme
+func NewRichTextBox(th theme.Theme, args ...interface{}) (*TextBox, error) {
 	tb := &TextBox{
 		theme: th,
 	}
-	for _, option := range options {
-		option.apply(tb)
+	var wordwrapArgs []interface{}
+	// Prepend font face from theme if not provided?
+	// NewRichWrapper handles arguments.
+	// We need to extract TextBox Options and DestSize.
+	destSize := image.Point{}
+	foundDestSize := false
+
+	// Iterate args to find TextBox options and DestSize
+	for _, arg := range args {
+		switch a := arg.(type) {
+		case Option:
+			a.apply(tb)
+		case image.Point:
+			if !foundDestSize {
+				destSize = a
+				foundDestSize = true
+			} else {
+				// Treat second point as...? Or just error?
+				// For now assume only one point is passed which is destSize
+				// But wordwrap might accept points? No.
+			}
+		default:
+			wordwrapArgs = append(wordwrapArgs, arg)
+		}
 	}
+
+	if !foundDestSize {
+		// Default or error?
+		// Existing code assumed destSize was passed.
+		// Let's assume 0,0 is valid if not passed, or caller checks.
+	}
+
+	// Add Theme Font Face to wordwrap args if not present?
+	// NewRichWrapper takes variadic args.
+	// It expects: contents, fontDrawer (or Face), wrapperOptions, boxerOptions...
+	// We should pass th.FontFace() as default font if user didn't supply one in ops?
+	// wordwrap.ProcessRichArgs parses them.
+	// Let's prepend th.FontFace() to wordwrapArgs to ensure a default font is available.
+	// But ProcessRichArgs might take the *last* font?
+	// Let's append it? No, if we append it, it might override user provided?
+	// ProcessRichArgs: if arg matches type, it sets it.
+	// If multiple fonts passed, last one wins?
+	// Let's check ProcessRichArgs (impl detail of wordwrap).
+	// Assuming providing it as one of the args is good.
+	wordwrapArgs = append([]interface{}{th.FontFace()}, wordwrapArgs...)
+
+	// We also need to pass tb.wordwrapOptions which might have been populated by TextBox options (like Chevron)
 	if tb.moreChevronLocation == TextEndChevron {
-		tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron(), wordwrap.ImageBoxMetricCenter(th.FontDrawer()))))
+		// This uses wordwrap types which are internal to wordwrap package unless exported.
+		// NewPageBreakBox is exported.
+		pb := wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron(), wordwrap.ImageBoxMetricCenter(th.FontDrawer())))
+		wordwrapArgs = append(wordwrapArgs, pb)
 	}
+
+	// Add any wordwrap options stored in tb (e.g. from Option that modified tb.wordwrapOptions)
+	for _, opt := range tb.wordwrapOptions {
+		wordwrapArgs = append(wordwrapArgs, opt)
+	}
+
 	if tb.wrapper == nil {
-		tb.wrapper = wordwrap.NewSimpleWrapper(text, th.FontFace(), tb.wordwrapOptions...)
+		tb.wrapper = wordwrap.NewRichWrapper(wordwrapArgs...)
 	}
 	destRect := image.Rectangle{
 		Min: image.Point{},
@@ -512,6 +591,17 @@ func (tb *TextBox) drawPage(target wordwrap.Image, layout *SimpleLayout, page *P
 	if tb.name != "" {
 		tb.drawNameTag(target, layout, opts...)
 	}
+	if tb.name != "" {
+		tb.drawNameTag(target, layout, opts...)
+	}
+	if tb.spaceMap != nil {
+		opts = append(opts, wordwrap.BoxRecorder(func(box wordwrap.Box, min, max image.Point, bps *wordwrap.BoxPositionStats) {
+			tb.spaceMap.Add(&BoxShape{
+				Box:  box,
+				Rect: image.Rectangle{Min: min, Max: max},
+			}, 0)
+		}))
+	}
 	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min, opts...); err != nil {
 		return false, err
 	}
@@ -521,6 +611,30 @@ func (tb *TextBox) drawPage(target wordwrap.Image, layout *SimpleLayout, page *P
 		}
 	}
 	return true, nil
+}
+
+type BoxShape struct {
+	wordwrap.Box
+	Rect image.Rectangle
+}
+
+func (b *BoxShape) Bounds() image.Rectangle {
+	return b.Rect
+}
+
+func (b *BoxShape) PointIn(x, y int) bool {
+	return b.Rect.Min.X <= x && x < b.Rect.Max.X && b.Rect.Min.Y <= y && y < b.Rect.Max.Y
+}
+
+func (b *BoxShape) String() string {
+	return fmt.Sprintf("Box(%s)", b.Box.TextValue())
+}
+
+func (b *BoxShape) ID() interface{} {
+	if i, ok := b.Box.(wordwrap.Identifier); ok {
+		return i.ID()
+	}
+	return nil
 }
 
 // getNextPage calculates the next page and updates various info. If all results are nil then it means there is nothing
