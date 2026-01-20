@@ -4,107 +4,109 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"log"
 	"time"
 
 	frame "github.com/arran4/golang-frame"
 	"github.com/arran4/golang-rpg-textbox/theme"
 	"github.com/arran4/golang-rpg-textbox/util"
 	wordwrap "github.com/arran4/golang-wordwrap"
+	"github.com/arran4/spacemap/shared"
 	"golang.org/x/image/draw"
 )
 
-// AvatarLocations Positioning locations for avatars
+// AvatarLocations defines where the avatar is positioned relative to the text box.
 type AvatarLocations int
 
 const (
-	// NoAvatar default show no avatar
+	// NoAvatar hides the avatar.
 	NoAvatar AvatarLocations = iota
-	// LeftAvatar Avatar on the left
+	// LeftAvatar positions the avatar on the left.
 	LeftAvatar
-	// RightAvatar on the right
+	// RightAvatar positions the avatar on the right.
 	RightAvatar
 )
 
-// apply Set the location when used as an Option
+// apply implements the Option interface.
 func (al AvatarLocations) apply(box *TextBox) {
 	box.avatarLocation = al
 }
 
-// NamePositions Positioning locations for the name tag
+// NamePositions defines where the name tag is positioned.
 type NamePositions int
 
 const (
-	// NoName default show no name tag
+	// NoName hides the name tag.
 	NoName NamePositions = iota
-	// NameTopLeftAboveTextInFrame on the left
+	// NameTopLeftAboveTextInFrame positions the name tag above the text, aligned left.
 	NameTopLeftAboveTextInFrame
-	// NameTopCenterInFrame on the left
+	// NameTopCenterInFrame positions the name tag above the text, centered.
 	NameTopCenterInFrame
-	// NameLeftAboveAvatarInFrame on the right
+	// NameLeftAboveAvatarInFrame positions the name tag above the avatar, aligned left.
 	NameLeftAboveAvatarInFrame
 )
 
-// apply Set the location when used as an Option
+// apply implements the Option interface.
 func (al NamePositions) apply(box *TextBox) {
 	box.namePosition = al
 }
 
-// MoreChevronLocations Position to put the "more text" marker
+// MoreChevronLocations defines where the "next page" indicator is positioned.
 type MoreChevronLocations int
 
 const (
-	// NoMoreChevron default. Don't show an avatar
+	// NoMoreChevron hides the chevron.
 	NoMoreChevron MoreChevronLocations = iota
-	// CenterBottomInsideTextFrame Name says it all. See readme or samples for more details.
+	// CenterBottomInsideTextFrame positions the chevron centered at the bottom of the text area.
 	CenterBottomInsideTextFrame
-	// CenterBottomInsideFrame Name says it all. See readme or samples for more details.
+	// CenterBottomInsideFrame positions the chevron centered at the bottom of the entire frame.
 	CenterBottomInsideFrame
-	// CenterBottomOnFrameTextFrame Name says it all. See readme or samples for more details.
+	// CenterBottomOnFrameTextFrame positions the chevron centered on the bottom edge of the text area.
 	CenterBottomOnFrameTextFrame
-	// CenterBottomOnFrameFrame Name says it all. See readme or samples for more details.
+	// CenterBottomOnFrameFrame positions the chevron centered on the bottom edge of the frame.
 	CenterBottomOnFrameFrame
-	// RightBottomInsideTextFrame Name says it all. See readme or samples for more details.
+	// RightBottomInsideTextFrame positions the chevron at the bottom right of the text area.
 	RightBottomInsideTextFrame
-	// RightBottomInsideFrame Name says it all. See readme or samples for more details.
+	// RightBottomInsideFrame positions the chevron at the bottom right of the frame.
 	RightBottomInsideFrame
-	// RightBottomOnFrameTextFrame Name says it all. See readme or samples for more details.
+	// RightBottomOnFrameTextFrame positions the chevron on the bottom right edge of the text area.
 	RightBottomOnFrameTextFrame
-	// RightBottomOnFrameFrame Name says it all. See readme or samples for more details.
+	// RightBottomOnFrameFrame positions the chevron on the bottom right edge of the frame.
 	RightBottomOnFrameFrame
-	// TextEndChevron Puts the reader marker at the end of text inline as though it were a character
+	// TextEndChevron positions the chevron inline at the end of the text.
 	TextEndChevron
 )
 
-// apply Set the location when used as an Option
+// apply implements the Option interface.
 func (cl MoreChevronLocations) apply(box *TextBox) {
 	box.moreChevronLocation = cl
 }
 
-// AvatarFit is an enum of how to handle the avatar not fitting
+// AvatarFit defines how the avatar is scaled if it doesn't fit the allocated space.
 type AvatarFit int
 
 const (
-	// NoAvatarFit Don't attempt to do anything, will have undefined behavior
+	// NoAvatarFit performs no scaling (undefined behavior if too large).
 	NoAvatarFit AvatarFit = iota
-	// CenterAvatar as the name suggests
+	// CenterAvatar centers the avatar without scaling.
 	CenterAvatar
-	// NearestNeighbour Resizes the avatar using the NearestNeighbour algorithm from experimental go draw package
+	// NearestNeighbour scales using nearest-neighbor interpolation.
 	NearestNeighbour
-	// ApproxBiLinear Resizes the avatar using the ApproxBiLinear algorithm from experimental go draw package
+	// ApproxBiLinear scales using approximate bi-linear interpolation.
 	ApproxBiLinear
 )
 
-// apply Set the location when used as an Option
+// apply implements the Option interface.
 func (af AvatarFit) apply(box *TextBox) {
 	box.avatarFit = af
 }
 
-// BoxTextBox Creates a function to draw a box around the area where the text box will be
+// BoxTextBox creates a PostDrawer that draws a box around the text area.
 func BoxTextBox() *boxTextBox {
 	return &boxTextBox{}
 }
 
-// BoxTextBox Creates a function to draw a box around the area where the text box will be
+// boxTextBox implements PostDrawer to draw a debug box.
 type boxTextBox struct{}
 
 // Interface enforcement
@@ -121,63 +123,60 @@ func (btb *boxTextBox) apply(box *TextBox) {
 	box.postDraw = append(box.postDraw, btb)
 }
 
-// PostDrawer allows custom components to be drawn after all other elements have
+// PostDrawer allows custom components to be drawn after standard elements.
 type PostDrawer interface {
 	PostDraw(target wordwrap.Image, layout *SimpleLayout, ls []wordwrap.Line, options ...wordwrap.DrawOption) error
 }
 
-// TextBox is the core class
+// TextBox is the main component for rendering RPG-style text boxes.
 type TextBox struct {
-	// avatarLocation the location of the avatars
-	avatarLocation AvatarLocations
-	// moreChevronLocation More text location
+	avatarLocation      AvatarLocations
 	moreChevronLocation MoreChevronLocations
-	// theme the theme to use
-	theme theme.Theme
-	// wordwrapOptions The options to pass to the wordwrapper
-	wordwrapOptions []wordwrap.WrapperOption
-	// wrapper The word wrapper itself
-	wrapper *wordwrap.SimpleWrapper
-	// name the name to show above the text box (TODO)
-	name Name
-	// nextPage the next page after the one we are on
-	nextPage int
-	// pages a cache of the pages
-	pages []*Page
-	// avatarFit Avatar scaling algorithm
-	avatarFit AvatarFit
-	// avatar Avatar image override
-	avatar *avatar
-	// postDraw Things to draw after all the other elements have been drawn
-	postDraw []PostDrawer
-	// animation the selected animation style
-	animation AnimationMode
-	// namePosition the location of the name tag
-	namePosition NamePositions
-	// nameBox is the image of the name tag
-	nameBox wordwrap.Box
+	theme               theme.Theme
+	wordwrapOptions     []wordwrap.WrapperOption
+	wrapper             *wordwrap.SimpleWrapper
+	name                Name
+	nextPage            int
+	pages               []*Page
+	avatarFit           AvatarFit
+	avatar              *avatar
+	postDraw            []PostDrawer
+	animation           AnimationMode
+	namePosition        NamePositions
+	nameBox             wordwrap.Box
+	spaceMap            SpaceMap
 }
 
-// Option are the configuration arguments
+// SpaceMap is an interface for mapping screen space to interactive shapes.
+type SpaceMap interface {
+	Add(shape shared.Shape, zIndex int)
+}
+
+// SetSpaceMap sets the space map to populate
+func (tb *TextBox) SetSpaceMap(m SpaceMap) {
+	tb.spaceMap = m
+}
+
+// Option defines a configuration option for the TextBox.
 type Option interface {
 	apply(*TextBox)
 }
 
-// Name the name of the character to show
+// Name sets the character name to display.
 type Name string
 
-// apply Set the location when used as an Option
+// apply implements the Option interface.
 func (n Name) apply(box *TextBox) {
 	box.name = n
 	box.nameBox, _ = wordwrap.NewSimpleTextBox(box.theme.FontDrawer(), string(n))
 }
 
-// avatar An avatar image overwrite of the theme default
+// avatar holds an avatar image override.
 type avatar struct {
 	wordwrap.Image
 }
 
-// Avatar override the default theme avatar
+// Avatar overrides the default theme avatar.
 func Avatar(i wordwrap.Image) Option {
 	return &avatar{
 		Image: i,
@@ -189,22 +188,92 @@ func (a *avatar) apply(box *TextBox) {
 	box.avatar = a
 }
 
-// NewSimpleTextBox as simple as possible constructor for the RPG TextBox,
-// Theme is required
-// destSize can be modified on a per frame basis but is the intended size of hte image
-// options see readme
+type wordwrapOption struct {
+	opt wordwrap.WrapperOption
+}
+
+func (w *wordwrapOption) apply(box *TextBox) {
+	box.wordwrapOptions = append(box.wordwrapOptions, w.opt)
+}
+
+// WithWordwrapOption allows passing wordwrap options as TextBox options
+func WithWordwrapOption(opt wordwrap.WrapperOption) Option {
+	return &wordwrapOption{opt: opt}
+}
+
+// NewSimpleTextBox creates a TextBox with simple string content.
+// theme is required.
+// destSize is the intended size of the image, but can be updated per frame.
 func NewSimpleTextBox(th theme.Theme, text string, destSize image.Point, options ...Option) (*TextBox, error) {
+	args := []interface{}{text, destSize}
+	for _, o := range options {
+		args = append(args, o)
+	}
+	return NewRichTextBox(th, args...)
+}
+
+// NewRichTextBox creates a TextBox with rich text content (e.g. colors, images).
+// theme is required.
+// args can include string content, image.Point (for size), and Options.
+func NewRichTextBox(th theme.Theme, args ...interface{}) (*TextBox, error) {
 	tb := &TextBox{
 		theme: th,
 	}
-	for _, option := range options {
-		option.apply(tb)
+	var wordwrapArgs []interface{}
+	// Prepend font face from theme if not provided?
+	// NewRichWrapper handles arguments.
+	// We need to extract TextBox Options and DestSize.
+	destSize := image.Point{}
+	foundDestSize := false
+
+	// Iterate args to find TextBox options and DestSize
+	for _, arg := range args {
+		switch a := arg.(type) {
+		case Option:
+			a.apply(tb)
+		case image.Point:
+			if !foundDestSize {
+				destSize = a
+				foundDestSize = true
+			}
+		default:
+			wordwrapArgs = append(wordwrapArgs, arg)
+		}
 	}
+
+	if !foundDestSize {
+		log.Printf("Warning: destSize not found in NewRichTextBox arguments")
+	}
+
+	// Add Theme Font Face to wordwrap args if not present?
+	// NewRichWrapper takes variadic args.
+	// It expects: contents, fontDrawer (or Face), wrapperOptions, boxerOptions...
+	// We should pass th.FontFace() as default font if user didn't supply one in ops?
+	// wordwrap.ProcessRichArgs parses them.
+	// Let's prepend th.FontFace() to wordwrapArgs to ensure a default font is available.
+	// But ProcessRichArgs might take the *last* font?
+	// Let's append it? No, if we append it, it might override user provided?
+	// ProcessRichArgs: if arg matches type, it sets it.
+	// If multiple fonts passed, last one wins?
+	// Let's check ProcessRichArgs (impl detail of wordwrap).
+	// Assuming providing it as one of the args is good.
+	wordwrapArgs = append([]interface{}{th.FontFace()}, wordwrapArgs...)
+
+	// We also need to pass tb.wordwrapOptions which might have been populated by TextBox options (like Chevron)
 	if tb.moreChevronLocation == TextEndChevron {
-		tb.wordwrapOptions = append(tb.wordwrapOptions, wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron(), wordwrap.ImageBoxMetricCenter(th.FontDrawer()))))
+		// This uses wordwrap types which are internal to wordwrap package unless exported.
+		// NewPageBreakBox is exported.
+		pb := wordwrap.NewPageBreakBox(wordwrap.NewImageBox(th.Chevron(), wordwrap.ImageBoxMetricCenter(th.FontDrawer())))
+		wordwrapArgs = append(wordwrapArgs, pb)
 	}
+
+	// Add any wordwrap options stored in tb (e.g. from Option that modified tb.wordwrapOptions)
+	for _, opt := range tb.wordwrapOptions {
+		wordwrapArgs = append(wordwrapArgs, opt)
+	}
+
 	if tb.wrapper == nil {
-		tb.wrapper = wordwrap.NewSimpleWrapper(text, th.FontFace(), tb.wordwrapOptions...)
+		tb.wrapper = wordwrap.NewRichWrapper(wordwrapArgs...)
 	}
 	destRect := image.Rectangle{
 		Min: image.Point{},
@@ -245,58 +314,53 @@ func (tb *TextBox) calculateNextFrame(layout Layout) (bool, error) {
 	return true, nil
 }
 
-// Layout the positioning algorithm output for the layout of the elements on the page
+// Layout defines the positioning of elements within the text box.
 type Layout interface {
-	// TextRect the area the text will be boxed into
+	// TextRect is the area containing the text.
 	TextRect() image.Rectangle
-	// CenterRect The midsection basically everything inside the frame
+	// CenterRect is the main content area inside the frame.
 	CenterRect() image.Rectangle
-	// AvatarRect the location the avatar is boxed into
+	// AvatarRect is the area containing the avatar.
 	AvatarRect() image.Rectangle
-	// ChevronRect the position of the chevron if given the correct position options
+	// ChevronRect is the area containing the chevron.
 	ChevronRect() image.Rectangle
-	// NameRect the position of the name if given the correct position options
+	// NameRect is the optional area containing the name tag.
 	NameRect() image.Rectangle
 }
 
-// SimpleLayout simple as possible layout. Keeps it mostly what most use-cases would suggest
+// SimpleLayout implements a standard text box layout.
 type SimpleLayout struct {
-	// TextRect the area the text will be boxed into
-	textRect image.Rectangle
-	// CenterRect The midsection basically everything inside the frame
-	centerRect image.Rectangle
-	// AvatarRect the location the avatar is boxed into
-	avatarRect image.Rectangle
-	// ChevronRect the position of the chevron if given the correct position options
+	textRect    image.Rectangle
+	centerRect  image.Rectangle
+	avatarRect  image.Rectangle
 	chevronRect image.Rectangle
-	// nameRect optional position of the name rect
-	nameRect image.Rectangle
+	nameRect    image.Rectangle
 }
 
 // Interface enforcement
 var _ Layout = (*SimpleLayout)(nil)
 
-// NameRect where the name rect belongs
+// NameRect returns the name tag rectangle.
 func (sl *SimpleLayout) NameRect() image.Rectangle {
 	return sl.nameRect
 }
 
-// TextRect the area the text will be boxed into
+// TextRect returns the text rectangle.
 func (sl *SimpleLayout) TextRect() image.Rectangle {
 	return sl.textRect
 }
 
-// CenterRect The midsection basically everythign inside the frame
+// CenterRect returns the center content rectangle.
 func (sl *SimpleLayout) CenterRect() image.Rectangle {
 	return sl.centerRect
 }
 
-// AvatarRect the location the avatar is boxed into
+// AvatarRect returns the avatar rectangle.
 func (sl *SimpleLayout) AvatarRect() image.Rectangle {
 	return sl.avatarRect
 }
 
-// ChevronRect the position of the chevron if given the correct position options
+// ChevronRect returns the chevron rectangle.
 func (sl *SimpleLayout) ChevronRect() image.Rectangle {
 	return sl.chevronRect
 }
@@ -512,6 +576,14 @@ func (tb *TextBox) drawPage(target wordwrap.Image, layout *SimpleLayout, page *P
 	if tb.name != "" {
 		tb.drawNameTag(target, layout, opts...)
 	}
+	if tb.spaceMap != nil {
+		opts = append(opts, wordwrap.BoxRecorder(func(box wordwrap.Box, min, max image.Point, bps *wordwrap.BoxPositionStats) {
+			tb.spaceMap.Add(&BoxShape{
+				Box:  box,
+				Rect: image.Rectangle{Min: min, Max: max},
+			}, 0)
+		}))
+	}
 	if err := tb.wrapper.RenderLines(subImage, page.ls, layout.TextRect().Min, opts...); err != nil {
 		return false, err
 	}
@@ -521,6 +593,30 @@ func (tb *TextBox) drawPage(target wordwrap.Image, layout *SimpleLayout, page *P
 		}
 	}
 	return true, nil
+}
+
+type BoxShape struct {
+	wordwrap.Box
+	Rect image.Rectangle
+}
+
+func (b *BoxShape) Bounds() image.Rectangle {
+	return b.Rect
+}
+
+func (b *BoxShape) PointIn(x, y int) bool {
+	return b.Rect.Min.X <= x && x < b.Rect.Max.X && b.Rect.Min.Y <= y && y < b.Rect.Max.Y
+}
+
+func (b *BoxShape) String() string {
+	return fmt.Sprintf("Box(%s)", b.TextValue())
+}
+
+func (b *BoxShape) ID() interface{} {
+	if i, ok := b.Box.(wordwrap.Identifier); ok {
+		return i.ID()
+	}
+	return nil
 }
 
 // getNextPage calculates the next page and updates various info. If all results are nil then it means there is nothing
@@ -547,7 +643,7 @@ func (tb *TextBox) getNextPage(bounds image.Rectangle) (*SimpleLayout, *Page, er
 	return layout, page, nil
 }
 
-// drawMoreChevron as expected
+// drawMoreChevron draws the "next page" indicator.
 func (tb *TextBox) drawMoreChevron(target wordwrap.Image, layout Layout, options ...wordwrap.DrawOption) {
 	cti := tb.theme.Chevron()
 	for _, option := range options {
@@ -564,7 +660,7 @@ func (tb *TextBox) drawMoreChevron(target wordwrap.Image, layout Layout, options
 	}
 }
 
-// drawNameTag as expected
+// drawNameTag draws the name tag.
 func (tb *TextBox) drawNameTag(target wordwrap.Image, layout Layout, options ...wordwrap.DrawOption) {
 	if tb.nameBox != nil {
 		switch tb.namePosition {
@@ -585,7 +681,7 @@ func (tb *TextBox) drawNameTag(target wordwrap.Image, layout Layout, options ...
 	}
 }
 
-// drawAvatar as expected
+// drawAvatar draws the avatar image.
 func (tb *TextBox) drawAvatar(target wordwrap.Image, layout Layout, options ...wordwrap.DrawOption) {
 	switch tb.avatarLocation {
 	case RightAvatar, LeftAvatar:
