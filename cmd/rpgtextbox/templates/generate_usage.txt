@@ -1,0 +1,19 @@
+Usage: rpgtextbox generate [flags...]
+
+Subcommands:
+    help         Print this help message
+    usage        Print this usage message
+
+Flags:
+    --width int             Doc width (default: 600)
+    --height int            Doc height (default: 150)
+    --themedir string       Directory to find the theme (default: ./theme)
+    --font string           Text font (default: goregular)
+    --dpi string            Doc dpi (default: 75)
+    --size string           font size (default: 16)
+    --text string           File in or - for std input
+    --out string            Prefix of filename to output (default: out-)
+    --chevron string        Use help for list
+    --avatar-pos string     Use help for list
+    --avatar-scale string   Use help for list
+    --animation string      Use help for list

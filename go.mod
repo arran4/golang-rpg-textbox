@@ -2,8 +2,6 @@ module github.com/arran4/golang-rpg-textbox
 
 go 1.24.0
 
-toolchain go1.24.3
-
 require (
 	github.com/arran4/golang-frame v0.0.2
 	github.com/arran4/golang-wordwrap v0.0.4
@@ -11,4 +9,11 @@ require (
 	golang.org/x/image v0.35.0
 )
 
-require github.com/arran4/spacemap v0.0.2
+require (
+	github.com/arran4/spacemap v0.0.2
+)
+
+require (
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
+)
