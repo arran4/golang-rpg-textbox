@@ -1,0 +1,10 @@
+Usage: rpgtextbox samples <subcommand>
+
+Subcommands:
+{{if .Recursive}}
+    samples animation
+    samples static
+{{else}}
+    animation
+    static
+{{end}}

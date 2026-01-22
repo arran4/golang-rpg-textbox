@@ -1,0 +1,11 @@
+Usage: rpgtextbox samples animation [flags...]
+
+Subcommands:
+    help         Print this help message
+    usage        Print this usage message
+
+Flags:
+    --width int       Doc width (default: 600)
+    --height int      Doc height (default: 150)
+    --text string     File in or - for std input
+    --outdir string   directory to save samples to (default: images/)
