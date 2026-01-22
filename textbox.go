@@ -44,6 +44,10 @@ const (
 	NameTopCenterInFrame
 	// NameLeftAboveAvatarInFrame positions the name tag above the avatar, aligned left.
 	NameLeftAboveAvatarInFrame
+	// NameTopLeftAboveFrame positions the name tag above the frame, aligned left.
+	NameTopLeftAboveFrame
+	// NameTopCenterAboveFrame positions the name tag above the frame, centered.
+	NameTopCenterAboveFrame
 )
 
 // apply implements the Option interface.
@@ -326,6 +330,8 @@ type Layout interface {
 	ChevronRect() image.Rectangle
 	// NameRect is the optional area containing the name tag.
 	NameRect() image.Rectangle
+	// FrameRect is the area containing the frame.
+	FrameRect() image.Rectangle
 }
 
 // SimpleLayout implements a standard text box layout.
@@ -335,6 +341,7 @@ type SimpleLayout struct {
 	avatarRect  image.Rectangle
 	chevronRect image.Rectangle
 	nameRect    image.Rectangle
+	frameRect   image.Rectangle
 }
 
 // Interface enforcement
@@ -343,6 +350,11 @@ var _ Layout = (*SimpleLayout)(nil)
 // NameRect returns the name tag rectangle.
 func (sl *SimpleLayout) NameRect() image.Rectangle {
 	return sl.nameRect
+}
+
+// FrameRect returns the frame rectangle.
+func (sl *SimpleLayout) FrameRect() image.Rectangle {
+	return sl.frameRect
 }
 
 // TextRect returns the text rectangle.
@@ -368,7 +380,23 @@ func (sl *SimpleLayout) ChevronRect() image.Rectangle {
 // NewSimpleLayout constructs SimpleLayout simply as possible (for the user.)
 func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, error) {
 	l := &SimpleLayout{}
-	if centerRect, err := tb.calculateCenterRect(destRect); err != nil {
+	l.frameRect = destRect
+	if tb.nameBox != nil {
+		m := tb.nameBox.MetricsRect()
+		a := tb.nameBox.AdvanceRect()
+		height := (m.Ascent + m.Descent).Ceil()
+		width := a.Ceil()
+		switch tb.namePosition {
+		case NameTopLeftAboveFrame:
+			l.nameRect = image.Rect(destRect.Min.X, destRect.Min.Y, destRect.Min.X+width, destRect.Min.Y+height)
+			l.frameRect.Min.Y += height
+		case NameTopCenterAboveFrame:
+			centerX := destRect.Min.X + (destRect.Dx()-width)/2
+			l.nameRect = image.Rect(centerX, destRect.Min.Y, centerX+width, destRect.Min.Y+height)
+			l.frameRect.Min.Y += height
+		}
+	}
+	if centerRect, err := tb.calculateCenterRect(l.frameRect); err != nil {
 		return nil, err
 	} else {
 		l.centerRect = centerRect
@@ -379,14 +407,17 @@ func NewSimpleLayout(tb *TextBox, destRect image.Rectangle) (*SimpleLayout, erro
 		a := tb.nameBox.AdvanceRect()
 		height := (m.Ascent + m.Descent).Ceil()
 		width := a.Ceil()
-		l.nameRect = image.Rect(0, 0, width, height)
 		switch tb.namePosition {
-		case NoName:
+		case NoName, NameTopLeftAboveFrame, NameTopCenterAboveFrame:
 		case NameTopCenterInFrame:
+			l.nameRect = image.Rect(0, 0, width, height)
 			l.nameRect.Min.X = l.centerRect.Min.X + (l.centerRect.Dx()-l.nameRect.Dx())/2
 			l.nameRect.Max.X = l.nameRect.Min.X + width
 			fallthrough
 		default:
+			if l.nameRect.Empty() {
+				l.nameRect = image.Rect(0, 0, width, height)
+			}
 			l.nameRect.Min.Y = l.centerRect.Min.Y
 			l.nameRect.Max.Y = l.centerRect.Min.Y + height
 			l.centerRect.Min.Y += height
@@ -565,7 +596,7 @@ func (tb *TextBox) DrawNextPageFrame(target wordwrap.Image, opts ...wordwrap.Dra
 
 // drawPage draws the entire page.
 func (tb *TextBox) drawPage(target wordwrap.Image, layout *SimpleLayout, page *Page, opts ...wordwrap.DrawOption) (bool, error) {
-	if err := drawFrame(tb.theme, target, opts...); err != nil {
+	if err := drawFrame(tb.theme, target.SubImage(layout.FrameRect()).(wordwrap.Image), opts...); err != nil {
 		return false, err
 	}
 	subImage := target.SubImage(layout.TextRect()).(wordwrap.Image)
