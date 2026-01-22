@@ -3,12 +3,6 @@ package cli
 import (
 	_ "embed"
 	"fmt"
-	"github.com/arran4/golang-rpg-textbox"
-	"github.com/arran4/golang-rpg-textbox/theme/cache"
-	"github.com/arran4/golang-rpg-textbox/theme/simple"
-	"github.com/arran4/golang-rpg-textbox/util"
-	wordwrap "github.com/arran4/golang-wordwrap"
-	"golang.org/x/image/draw"
 	"image"
 	"image/color/palette"
 	"image/gif"
@@ -17,6 +11,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	rpgtextbox "github.com/arran4/golang-rpg-textbox"
+	"github.com/arran4/golang-rpg-textbox/theme/cache"
+	"github.com/arran4/golang-rpg-textbox/theme/simple"
+	"github.com/arran4/golang-rpg-textbox/util"
+	wordwrap "github.com/arran4/golang-wordwrap"
+	"golang.org/x/image/draw"
 )
 
 //go:embed "sample1.txt"
@@ -123,10 +124,11 @@ func OptionDescriptionBuild(addTextBox func(oas []string, oa []rpgtextbox.Option
 // GenerateAnimationSamples is a subcommand `rpgtextbox samples animation`
 //
 // Flags:
-//   width:      --width      (default: 600)      Doc width
-//   height:     --height     (default: 150)      Doc height
-//   textSource: --text       (default: "")       File in, or - for std input
-//   outDir:     --outdir     (default: "images/") directory to save samples to
+//
+//	width:      --width      (default: 600)      Doc width
+//	height:     --height     (default: 150)      Doc height
+//	textSource: --text       (default: "")       File in, or - for std input
+//	outDir:     --outdir     (default: "images/") directory to save samples to
 func GenerateAnimationSamples(width, height int, textSource, outDir string) error {
 	log.Printf("Starting")
 	textBoxSize := image.Pt(width, height)
@@ -137,12 +139,12 @@ func GenerateAnimationSamples(width, height int, textSource, outDir string) erro
 		var err error
 		text, err = util.GetText(textSource)
 		if err != nil {
-			return fmt.Errorf("Text fetch error: %w", err)
+			return fmt.Errorf("text fetch error: %w", err)
 		}
 	}
 	t, err := cache.New(simple.New())
 	if err != nil {
-		return fmt.Errorf("Theme fetch error: %w", err)
+		return fmt.Errorf("theme fetch error: %w", err)
 	}
 	var points []*SampleTextBox
 	var maxPages int
@@ -204,10 +206,11 @@ func GenerateAnimationSamples(width, height int, textSource, outDir string) erro
 // GenerateSamples is a subcommand `rpgtextbox samples static`
 //
 // Flags:
-//   width:      --width      (default: 600)      Doc width
-//   height:     --height     (default: 150)      Doc height
-//   textSource: --text       (default: "")       File in, or - for std input
-//   outDir:     --outdir     (default: "images/") directory to save samples to
+//
+//	width:      --width      (default: 600)      Doc width
+//	height:     --height     (default: 150)      Doc height
+//	textSource: --text       (default: "")       File in, or - for std input
+//	outDir:     --outdir     (default: "images/") directory to save samples to
 func GenerateSamples(width, height int, textSource, outDir string) error {
 	log.Printf("Starting")
 	textBoxSize := image.Pt(width, height)
@@ -218,12 +221,12 @@ func GenerateSamples(width, height int, textSource, outDir string) error {
 		var err error
 		text, err = util.GetText(textSource)
 		if err != nil {
-			return fmt.Errorf("Text fetch error: %w", err)
+			return fmt.Errorf("text fetch error: %w", err)
 		}
 	}
 	t, err := cache.New(simple.New())
 	if err != nil {
-		return fmt.Errorf("Theme fetch error: %w", err)
+		return fmt.Errorf("theme fetch error: %w", err)
 	}
 	var points []*SampleTextBox
 	var maxPages int

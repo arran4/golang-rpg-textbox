@@ -3,6 +3,7 @@ package rpgtextbox
 import (
 	"fmt"
 	"image"
+	"os"
 	"testing"
 
 	"github.com/arran4/golang-rpg-textbox/theme/simple"
@@ -10,6 +11,10 @@ import (
 )
 
 func TestNamePositioning(t *testing.T) {
+	if err := os.MkdirAll("test_output", 0755); err != nil {
+		t.Fatalf("Failed to create test_output directory: %v", err)
+	}
+
 	theme, err := simple.New()
 	if err != nil {
 		t.Fatalf("Failed to create simple theme: %v", err)

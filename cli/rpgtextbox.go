@@ -2,34 +2,36 @@ package cli
 
 import (
 	"fmt"
-	"github.com/arran4/golang-rpg-textbox"
-	"github.com/arran4/golang-rpg-textbox/theme/cache"
-	"github.com/arran4/golang-rpg-textbox/theme/fromdirpng"
-	"github.com/arran4/golang-rpg-textbox/util"
-	"golang.org/x/image/draw"
 	"image"
 	"image/color/palette"
 	"image/gif"
 	"log"
 	"strconv"
 	"time"
+
+	rpgtextbox "github.com/arran4/golang-rpg-textbox"
+	"github.com/arran4/golang-rpg-textbox/theme/cache"
+	"github.com/arran4/golang-rpg-textbox/theme/fromdirpng"
+	"github.com/arran4/golang-rpg-textbox/util"
+	"golang.org/x/image/draw"
 )
 
 // GenerateTextBox is a subcommand `rpgtextbox generate`
 //
 // Flags:
-//   width:       --width       (default: 600)         Doc width
-//   height:      --height      (default: 150)         Doc height
-//   themeDir:    --themedir    (default: "./theme")   Directory to find the theme
-//   fontName:    --font        (default: "goregular") Text font
-//   dpi:         --dpi         (default: "75")        Doc dpi
-//   fontSize:    --size        (default: "16")        font size
-//   textSource:  --text        (default: "")          File in, or - for std input
-//   outPrefix:   --out         (default: "out-")      Prefix of filename to output
-//   chevronLoc:  --chevron     (default: "")          Use help for list
-//   avatarPos:   --avatar-pos  (default: "")          Use help for list
-//   avatarScale: --avatar-scale (default: "")         Use help for list
-//   animation:   --animation   (default: "")          Use help for list
+//
+//	width:       --width       (default: 600)         Doc width
+//	height:      --height      (default: 150)         Doc height
+//	themeDir:    --themedir    (default: "./theme")   Directory to find the theme
+//	fontName:    --font        (default: "goregular") Text font
+//	dpi:         --dpi         (default: "75")        Doc dpi
+//	fontSize:    --size        (default: "16")        font size
+//	textSource:  --text        (default: "")          File in, or - for std input
+//	outPrefix:   --out         (default: "out-")      Prefix of filename to output
+//	chevronLoc:  --chevron     (default: "")          Use help for list
+//	avatarPos:   --avatar-pos  (default: "")          Use help for list
+//	avatarScale: --avatar-scale (default: "")         Use help for list
+//	animation:   --animation   (default: "")          Use help for list
 func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize string, textSource, outPrefix, chevronLoc, avatarPos, avatarScale, animation string) error {
 	log.Printf("Starting")
 	textBoxSize := image.Pt(width, height)
@@ -37,11 +39,11 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 	var err error
 	text, err = util.GetText(textSource)
 	if err != nil {
-		return fmt.Errorf("Text fetch error: %w", err)
+		return fmt.Errorf("text fetch error: %w", err)
 	}
 	gr, err := util.OpenFont(fontName)
 	if err != nil {
-		return fmt.Errorf("Error opening font %s: %w", fontName, err)
+		return fmt.Errorf("error opening font %s: %w", fontName, err)
 	}
 	fFontSize, err := strconv.ParseFloat(fontSize, 64)
 	if err != nil {
@@ -54,7 +56,7 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 	grf := util.GetFontFace(fFontSize, fDpi, gr)
 	t, err := cache.New(fromdirpng.New(themeDir, grf))
 	if err != nil {
-		return fmt.Errorf("Theme fetch error: %w", err)
+		return fmt.Errorf("theme fetch error: %w", err)
 	}
 	var ops []rpgtextbox.Option
 	chevronLocs := map[string][]rpgtextbox.Option{
@@ -145,12 +147,12 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 
 	tb, err := rpgtextbox.NewSimpleTextBox(t, text, textBoxSize, ops...)
 	if err != nil {
-		return fmt.Errorf("Error %w", err)
+		return fmt.Errorf("error %w", err)
 	}
 
 	pages, err := tb.CalculateAllPages(textBoxSize)
 	if err != nil {
-		return fmt.Errorf("Text fetch error: %w", err)
+		return fmt.Errorf("text fetch error: %w", err)
 	}
 
 	if animated {
@@ -161,7 +163,7 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 		for {
 			i := image.NewRGBA(image.Rect(0, 0, width, height))
 			if done, ui, w, err := tb.DrawNextFrame(i); err != nil {
-				return fmt.Errorf("Draw next frame error: %w", err)
+				return fmt.Errorf("draw next frame error: %w", err)
 			} else if done && !ui && w <= 0 {
 				break
 			} else {
@@ -182,7 +184,7 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 		}
 		log.Printf("Saving %s", ofn)
 		if err := util.SaveGifFile(ofn, gifo); err != nil {
-			return fmt.Errorf("Error with saving file: %w", err)
+			return fmt.Errorf("error with saving file: %w", err)
 		}
 		log.Printf("Saved %s", ofn)
 
@@ -190,11 +192,11 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 		for page := 0; page < pages; page++ {
 			i := image.NewRGBA(image.Rect(0, 0, width, height))
 			if _, err := tb.DrawNextPageFrame(i); err != nil {
-				return fmt.Errorf("Draw next frame error: %w", err)
+				return fmt.Errorf("draw next frame error: %w", err)
 			}
 			ofn := fmt.Sprintf("%s-%02d.%s", outPrefix, page+1, ext)
 			if err := util.SavePngFile(i, ofn); err != nil {
-				return fmt.Errorf("Error with saving file: %w", err)
+				return fmt.Errorf("error with saving file: %w", err)
 			}
 			log.Printf("Saving %s", ofn)
 		}
