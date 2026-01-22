@@ -35,10 +35,10 @@ changelog:
 nfpms:
   -
     vendor: Ubels Software Development
-    homepage: https://github.com/arran4/
+    homepage: https://github.com/arran4/golang-rpg-textbox
     maintainer: Arran Ubels <arran@ubels.com.au>
-    description: NA
-    license: Private
+    description: RPG Textbox Generator
+    license: MIT
     formats:
       - apk
       - deb
