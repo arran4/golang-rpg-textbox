@@ -9,27 +9,30 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
 	"github.com/arran4/golang-rpg-textbox/cli"
+	"github.com/arran4/golang-rpg-textbox/cmd"
 )
 
 var _ Cmd = (*Generate)(nil)
 
 type Generate struct {
 	*RootCmd
-	Flags       *flag.FlagSet
-	width       int
-	height      int
-	themeDir    string
-	fontName    string
-	dpi         string
-	fontSize    string
-	textSource  string
-	outPrefix   string
-	chevronLoc  string
-	avatarPos   string
-	avatarScale string
-	animation   string
-	SubCommands map[string]Cmd
+	Flags         *flag.FlagSet
+	width         int
+	height        int
+	themeDir      string
+	fontName      string
+	dpi           string
+	fontSize      string
+	textSource    string
+	outPrefix     string
+	chevronLoc    string
+	avatarPos     string
+	avatarScale   string
+	animation     string
+	SubCommands   map[string]Cmd
+	CommandAction func(c *Generate) error
 }
 
 type UsageDataGenerate struct {
@@ -62,7 +65,7 @@ func (c *Generate) Execute(args []string) error {
 		if arg == "--" {
 			break
 		}
-		if strings.HasPrefix(arg, "-") {
+		if strings.HasPrefix(arg, "-") && arg != "-" {
 			name := arg
 			value := ""
 			hasValue := false
@@ -223,8 +226,12 @@ func (c *Generate) Execute(args []string) error {
 		}
 	}
 
-	if err := cli.GenerateTextBox(c.width, c.height, c.themeDir, c.fontName, c.dpi, c.fontSize, c.textSource, c.outPrefix, c.chevronLoc, c.avatarPos, c.avatarScale, c.animation); err != nil {
-		return fmt.Errorf("generate failed: %w", err)
+	if c.CommandAction != nil {
+		if err := c.CommandAction(c); err != nil {
+			return fmt.Errorf("generate failed: %w", err)
+		}
+	} else {
+		c.Usage()
 	}
 
 	return nil
@@ -262,6 +269,23 @@ func (c *RootCmd) NewGenerate() *Generate {
 
 	set.StringVar(&v.animation, "animation", "", "Use help for list")
 	set.Usage = v.Usage
+
+	v.CommandAction = func(c *Generate) error {
+
+		err := cli.GenerateTextBox(c.width, c.height, c.themeDir, c.fontName, c.dpi, c.fontSize, c.textSource, c.outPrefix, c.chevronLoc, c.avatarPos, c.avatarScale, c.animation)
+		if err != nil {
+			if errors.Is(err, cmd.ErrPrintHelp) {
+				c.Usage()
+				return nil
+			}
+			if errors.Is(err, cmd.ErrHelp) {
+				fmt.Fprintf(os.Stderr, "Use '%s help' for more information.\n", os.Args[0])
+				return nil
+			}
+			return fmt.Errorf("generate failed: %w", err)
+		}
+		return nil
+	}
 
 	v.SubCommands["help"] = &InternalCommand{
 		Exec: func(args []string) error {

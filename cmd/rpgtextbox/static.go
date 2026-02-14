@@ -9,19 +9,22 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
 	"github.com/arran4/golang-rpg-textbox/cli"
+	"github.com/arran4/golang-rpg-textbox/cmd"
 )
 
 var _ Cmd = (*Static)(nil)
 
 type Static struct {
 	*Samples
-	Flags       *flag.FlagSet
-	width       int
-	height      int
-	textSource  string
-	outDir      string
-	SubCommands map[string]Cmd
+	Flags         *flag.FlagSet
+	width         int
+	height        int
+	textSource    string
+	outDir        string
+	SubCommands   map[string]Cmd
+	CommandAction func(c *Static) error
 }
 
 type UsageDataStatic struct {
@@ -54,7 +57,7 @@ func (c *Static) Execute(args []string) error {
 		if arg == "--" {
 			break
 		}
-		if strings.HasPrefix(arg, "-") {
+		if strings.HasPrefix(arg, "-") && arg != "-" {
 			name := arg
 			value := ""
 			hasValue := false
@@ -127,8 +130,12 @@ func (c *Static) Execute(args []string) error {
 		}
 	}
 
-	if err := cli.GenerateSamples(c.width, c.height, c.textSource, c.outDir); err != nil {
-		return fmt.Errorf("static failed: %w", err)
+	if c.CommandAction != nil {
+		if err := c.CommandAction(c); err != nil {
+			return fmt.Errorf("static failed: %w", err)
+		}
+	} else {
+		c.Usage()
 	}
 
 	return nil
@@ -150,6 +157,23 @@ func (c *Samples) NewStatic() *Static {
 
 	set.StringVar(&v.outDir, "outdir", "images/", "directory to save samples to")
 	set.Usage = v.Usage
+
+	v.CommandAction = func(c *Static) error {
+
+		err := cli.GenerateSamples(c.width, c.height, c.textSource, c.outDir)
+		if err != nil {
+			if errors.Is(err, cmd.ErrPrintHelp) {
+				c.Usage()
+				return nil
+			}
+			if errors.Is(err, cmd.ErrHelp) {
+				fmt.Fprintf(os.Stderr, "Use '%s help' for more information.\n", os.Args[0])
+				return nil
+			}
+			return fmt.Errorf("static failed: %w", err)
+		}
+		return nil
+	}
 
 	v.SubCommands["help"] = &InternalCommand{
 		Exec: func(args []string) error {
