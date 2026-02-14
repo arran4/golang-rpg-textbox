@@ -9,11 +9,4 @@ require (
 	golang.org/x/image v0.35.0
 )
 
-require (
-	github.com/arran4/spacemap v0.0.2
-)
-
-require (
-	golang.org/x/mod v0.31.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
-)
+require github.com/arran4/spacemap v0.0.2
