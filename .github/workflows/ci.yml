@@ -332,9 +332,8 @@ jobs:
           gh pr create \
             --title "ci: automated formatting fixes" \
             --body "Automated formatting pass. Parent-PR: ${PARENT_PR}" \
-            \
-            --head "$BRANCH" \
-            --label "ci-autofix"
+            --head "$BRANCH"
+
 
   cleanup-autofix-prs:
     name: Cleanup autofix PRs on parent close
