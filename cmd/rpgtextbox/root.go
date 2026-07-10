@@ -131,7 +131,7 @@ func (c *RootCmd) Execute(args []string) error {
 	if err := c.Parse(args); err != nil {
 		return NewUserError(err, fmt.Sprintf("flag parse error %s", err.Error()))
 	}
-	remainingArgs := c.FlagSet.Args()
+	remainingArgs := c.Args()
 	if len(remainingArgs) < 1 {
 		c.Usage()
 		return nil
