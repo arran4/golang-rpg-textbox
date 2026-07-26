@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -15,61 +16,63 @@ import (
 	"github.com/arran4/golang-rpg-textbox/cmd"
 )
 
-var _ Cmd = (*Static)(nil)
+var _ Cmd = (*SamplesStatic)(nil)
 
-type Static struct {
+type SamplesStatic struct {
 	*Samples
 	Flags         *flag.FlagSet
 	width         int
 	height        int
 	textSource    string
 	outDir        string
-	SubCommands   map[string]Cmd
-	CommandAction func(c *Static) error
+	SubCommands   map[string]func() Cmd
+	CommandAction func(c *SamplesStatic) error
 }
 
-type UsageDataStatic struct {
-	*Static
+type UsageDataSamplesStatic struct {
+	*SamplesStatic
 	Recursive bool
 }
 
-func (c *Static) Usage() {
-	err := executeUsage(os.Stderr, "static_usage.txt", UsageDataStatic{c, false})
+func (c *SamplesStatic) Usage() {
+	err := executeUsage(os.Stderr, "static_usage.txt", UsageDataSamplesStatic{c, false})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating usage: %s\n", err)
 	}
 }
 
-func (c *Static) UsageRecursive() {
-	err := executeUsage(os.Stderr, "static_usage.txt", UsageDataStatic{c, true})
+func (c *SamplesStatic) UsageRecursive() {
+	err := executeUsage(os.Stderr, "static_usage.txt", UsageDataSamplesStatic{c, true})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating usage: %s\n", err)
 	}
 }
 
-func (c *Static) Execute(args []string) error {
-	if len(args) > 0 {
-		if cmd, ok := c.SubCommands[args[0]]; ok {
-			return cmd.Execute(args[1:])
-		}
-	}
+func (c *SamplesStatic) Execute(args []string) error {
+	var remainingArgs []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--" {
+			remainingArgs = append(remainingArgs, args[i+1:]...)
 			break
 		}
-		if strings.HasPrefix(arg, "-") && arg != "-" {
-			name := arg
+		if strings.HasPrefix(arg, "--") {
+			if arg == "--help" {
+				c.Usage()
+				return nil
+			}
+			name := arg[2:]
 			value := ""
 			hasValue := false
-			if strings.Contains(arg, "=") {
-				parts := strings.SplitN(arg, "=", 2)
+			if strings.Contains(name, "=") {
+				parts := strings.SplitN(name, "=", 2)
 				name = parts[0]
 				value = parts[1]
 				hasValue = true
 			}
-			trimmedName := strings.TrimLeft(name, "-")
-			switch trimmedName {
+			_ = value
+			_ = hasValue
+			switch name {
 
 			case "width":
 				if !hasValue {
@@ -80,11 +83,11 @@ func (c *Static) Execute(args []string) error {
 						return fmt.Errorf("flag %s requires a value", name)
 					}
 				}
-				iv, err := strconv.Atoi(value)
+				v, err := strconv.Atoi(value)
 				if err != nil {
 					return fmt.Errorf("invalid integer value for flag %s: %s", name, value)
 				}
-				c.width = iv
+				c.width = v
 
 			case "height":
 				if !hasValue {
@@ -95,11 +98,11 @@ func (c *Static) Execute(args []string) error {
 						return fmt.Errorf("flag %s requires a value", name)
 					}
 				}
-				iv, err := strconv.Atoi(value)
+				v, err := strconv.Atoi(value)
 				if err != nil {
 					return fmt.Errorf("invalid integer value for flag %s: %s", name, value)
 				}
-				c.height = iv
+				c.height = v
 
 			case "textSource", "text":
 				if !hasValue {
@@ -122,12 +125,33 @@ func (c *Static) Execute(args []string) error {
 					}
 				}
 				c.outDir = value
-			case "help", "h":
-				c.Usage()
-				return nil
 			default:
-				return fmt.Errorf("unknown flag: %s", name)
+				return fmt.Errorf("unknown flag: --%s", name)
 			}
+		} else if strings.HasPrefix(arg, "-") && arg != "-" {
+			// Short flags
+			shorts := arg[1:]
+			for j := 0; j < len(shorts); j++ {
+				char := string(shorts[j])
+				if char == "h" {
+					c.Usage()
+					return nil
+				}
+				found := false
+
+				if !found {
+					return fmt.Errorf("unknown flag: -%s", char)
+				}
+			}
+		} else {
+			remainingArgs = append(remainingArgs, args[i:]...)
+			break
+		}
+	}
+
+	if len(remainingArgs) > 0 {
+		if cmd, ok := c.SubCommands[remainingArgs[0]]; ok {
+			return cmd().Execute(remainingArgs[1:])
 		}
 	}
 
@@ -142,24 +166,24 @@ func (c *Static) Execute(args []string) error {
 	return nil
 }
 
-func (c *Samples) NewStatic() *Static {
+func (c *Samples) NewSamplesStatic() *SamplesStatic {
 	set := flag.NewFlagSet("static", flag.ContinueOnError)
-	v := &Static{
+	v := &SamplesStatic{
 		Samples:     c,
 		Flags:       set,
-		SubCommands: make(map[string]Cmd),
+		SubCommands: make(map[string]func() Cmd),
 	}
 
 	set.IntVar(&v.width, "width", 600, "Doc width")
 
 	set.IntVar(&v.height, "height", 150, "Doc height")
 
-	set.StringVar(&v.textSource, "text", "", "File in or - for std input")
+	set.StringVar(&v.textSource, "text", "", "File in, or - for std input")
 
 	set.StringVar(&v.outDir, "outdir", "images/", "directory to save samples to")
 	set.Usage = v.Usage
 
-	v.CommandAction = func(c *Static) error {
+	v.CommandAction = func(c *SamplesStatic) error {
 
 		err := cli.GenerateSamples(c.width, c.height, c.textSource, c.outDir)
 		if err != nil {
@@ -179,31 +203,31 @@ func (c *Samples) NewStatic() *Static {
 		return nil
 	}
 
-	v.SubCommands["help"] = &InternalCommand{
-		Exec: func(args []string) error {
-			for _, arg := range args {
-				if arg == "-deep" {
+	v.SubCommands["help"] = func() Cmd {
+		return &InternalCommand{
+			Exec: func(args []string) error {
+				if slices.Contains(args, "-deep") {
 					v.UsageRecursive()
 					return nil
 				}
-			}
-			v.Usage()
-			return nil
-		},
-		UsageFunc: v.Usage,
+				v.Usage()
+				return nil
+			},
+			UsageFunc: v.Usage,
+		}
 	}
-	v.SubCommands["usage"] = &InternalCommand{
-		Exec: func(args []string) error {
-			for _, arg := range args {
-				if arg == "-deep" {
+	v.SubCommands["usage"] = func() Cmd {
+		return &InternalCommand{
+			Exec: func(args []string) error {
+				if slices.Contains(args, "-deep") {
 					v.UsageRecursive()
 					return nil
 				}
-			}
-			v.Usage()
-			return nil
-		},
-		UsageFunc: v.Usage,
+				v.Usage()
+				return nil
+			},
+			UsageFunc: v.Usage,
+		}
 	}
 	return v
 }

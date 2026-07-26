@@ -5,6 +5,8 @@ Subcommands:
     help         Print this help message
     usage        Print this usage message
 
+
+
 Flags:
     --width int             (default: 600)           Doc width
     --height int            (default: 150)           Doc height
@@ -12,7 +14,7 @@ Flags:
     --font string           (default: "goregular")   Text font
     --dpi string            (default: "75")          Doc dpi
     --size string           (default: "16")          font size
-    --text string                                    File in or - for std input
+    --text string                                    File in, or - for std input
     --out string            (default: "out-")        Prefix of filename to output
     --chevron string                                 Use help for list
     --avatar-pos string                              Use help for list

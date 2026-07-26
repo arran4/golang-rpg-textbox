@@ -5,8 +5,10 @@ Subcommands:
     help         Print this help message
     usage        Print this usage message
 
+
+
 Flags:
     --width int       (default: 600)         Doc width
     --height int      (default: 150)         Doc height
-    --text string                            File in or - for std input
+    --text string                            File in, or - for std input
     --outdir string   (default: "images/")   directory to save samples to

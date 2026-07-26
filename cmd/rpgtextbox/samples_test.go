@@ -3,29 +3,34 @@
 package main
 
 import (
+	"flag"
 	"testing"
 )
 
-func TestRoot_Execute(t *testing.T) {
-	cmd, err := NewRoot("test", "", "", "")
-	if err != nil {
-		t.Fatalf("Failed to create root command: %v", err)
-	}
+func TestSamples_Execute(t *testing.T) {
 
-	// No function defined for root command, so Execute expects a subcommand.
-	// We can test that it fails with unknown command or usage.
-	err = cmd.Execute([]string{"unknown-command"})
-	if err == nil {
-		t.Error("Expected error for unknown command, got nil")
+	parent := &RootCmd{
+		FlagSet:  flag.NewFlagSet("root", flag.ContinueOnError),
+		Commands: make(map[string]func() Cmd),
+	}
+	cmd := parent.NewSamples()
+
+	args := []string{}
+
+	err := cmd.Execute(args)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
 	}
 
 }
 
-func TestRoot_ExecuteHelpAndUnknownFlags(t *testing.T) {
-	cmd, err := NewRoot("test", "", "", "")
-	if err != nil {
-		t.Fatalf("Failed to create root command: %v", err)
+func TestSamples_ExecuteHelpAndUnknownFlags(t *testing.T) {
+
+	parent := &RootCmd{
+		FlagSet:  flag.NewFlagSet("root", flag.ContinueOnError),
+		Commands: make(map[string]func() Cmd),
 	}
+	cmd := parent.NewSamples()
 
 	if err := cmd.Execute([]string{"--help"}); err != nil {
 		t.Errorf("--help returned an error: %v", err)

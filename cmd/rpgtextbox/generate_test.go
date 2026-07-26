@@ -11,7 +11,7 @@ func TestGenerate_Execute(t *testing.T) {
 
 	parent := &RootCmd{
 		FlagSet:  flag.NewFlagSet("root", flag.ContinueOnError),
-		Commands: make(map[string]Cmd),
+		Commands: make(map[string]func() Cmd),
 	}
 	cmd := parent.NewGenerate()
 
@@ -26,23 +26,23 @@ func TestGenerate_Execute(t *testing.T) {
 	args = append(args, "1")
 	args = append(args, "--height")
 	args = append(args, "1")
-	args = append(args, "--themeDir")
+	args = append(args, "--themedir")
 	args = append(args, "test")
-	args = append(args, "--fontName")
+	args = append(args, "--font")
 	args = append(args, "test")
 	args = append(args, "--dpi")
 	args = append(args, "test")
-	args = append(args, "--fontSize")
+	args = append(args, "--size")
 	args = append(args, "test")
-	args = append(args, "--textSource")
+	args = append(args, "--text")
 	args = append(args, "test")
-	args = append(args, "--outPrefix")
+	args = append(args, "--out")
 	args = append(args, "test")
-	args = append(args, "--chevronLoc")
+	args = append(args, "--chevron")
 	args = append(args, "test")
-	args = append(args, "--avatarPos")
+	args = append(args, "--avatar-pos")
 	args = append(args, "test")
-	args = append(args, "--avatarScale")
+	args = append(args, "--avatar-scale")
 	args = append(args, "test")
 	args = append(args, "--animation")
 	args = append(args, "test")
@@ -51,6 +51,7 @@ func TestGenerate_Execute(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
 	if !called {
 		t.Error("CommandAction was not called")
 	}
@@ -90,5 +91,27 @@ func TestGenerate_Execute(t *testing.T) {
 	}
 	if cmd.animation != "test" {
 		t.Errorf("Expected animation to be 'test', got '%v'", cmd.animation)
+	}
+}
+
+func TestGenerate_ExecuteHelpAndUnknownFlags(t *testing.T) {
+
+	parent := &RootCmd{
+		FlagSet:  flag.NewFlagSet("root", flag.ContinueOnError),
+		Commands: make(map[string]func() Cmd),
+	}
+	cmd := parent.NewGenerate()
+
+	if err := cmd.Execute([]string{"--help"}); err != nil {
+		t.Errorf("--help returned an error: %v", err)
+	}
+	if err := cmd.Execute([]string{"-h"}); err != nil {
+		t.Errorf("-h returned an error: %v", err)
+	}
+	if err := cmd.Execute([]string{"--not-a-real-flag"}); err == nil {
+		t.Error("expected an error for an unknown long flag")
+	}
+	if err := cmd.Execute([]string{"-?"}); err == nil {
+		t.Error("expected an error for an unknown short flag")
 	}
 }

@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
+	"strings"
+	"sync"
 
 	"github.com/arran4/golang-rpg-textbox/cmd/rpgtextbox/templates"
 )
@@ -29,6 +32,17 @@ func (c *InternalCommand) Usage() {
 	c.UsageFunc()
 }
 
+func NewLazyCommand(f func() Cmd) func() Cmd {
+	var once sync.Once
+	var cmd Cmd
+	return func() Cmd {
+		once.Do(func() {
+			cmd = f()
+		})
+		return cmd
+	}
+}
+
 type UserError struct {
 	Err error
 	Msg string
@@ -45,13 +59,13 @@ func NewUserError(err error, msg string) *UserError {
 	return &UserError{Err: err, Msg: msg}
 }
 
-func executeUsage(out io.Writer, templateName string, data interface{}) error {
+func executeUsage(out io.Writer, templateName string, data any) error {
 	return templates.GetTemplates().ExecuteTemplate(out, templateName, data)
 }
 
 type RootCmd struct {
 	*flag.FlagSet
-	Commands      map[string]Cmd
+	Commands      map[string]func() Cmd
 	Version       string
 	Commit        string
 	Date          string
@@ -59,87 +73,141 @@ type RootCmd struct {
 }
 
 func (c *RootCmd) Usage() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	c.PrintDefaults()
-	fmt.Fprintln(os.Stderr, "  Commands:")
-	for name := range c.Commands {
-		fmt.Fprintf(os.Stderr, "    %s\n", name)
+	err := executeUsage(os.Stderr, "rpgtextbox_usage.txt", UsageDataRootCmd{c, false})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating usage: %s\n", err)
 	}
 }
 
 func (c *RootCmd) UsageRecursive() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	c.PrintDefaults()
-	fmt.Fprintln(os.Stderr, "  Commands:")
-	fmt.Fprintf(os.Stderr, "    %s\n", "generate")
-	fmt.Fprintf(os.Stderr, "    %s\n", "samples")
-	fmt.Fprintf(os.Stderr, "    %s\n", "samples animation")
-	fmt.Fprintf(os.Stderr, "    %s\n", "samples static")
+	err := executeUsage(os.Stderr, "rpgtextbox_usage.txt", UsageDataRootCmd{c, true})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating usage: %s\n", err)
+	}
+}
+
+type UsageDataRootCmd struct {
+	*RootCmd
+	Recursive bool
 }
 
 func NewRoot(name, version, commit, date string) (*RootCmd, error) {
 	c := &RootCmd{
 		FlagSet:  flag.NewFlagSet(name, flag.ExitOnError),
-		Commands: make(map[string]Cmd),
+		Commands: make(map[string]func() Cmd),
 		Version:  version,
 		Commit:   commit,
 		Date:     date,
 	}
 	c.FlagSet.Usage = c.Usage
 
-	c.Commands["generate"] = c.NewGenerate()
-	c.Commands["samples"] = c.NewSamples()
-	c.Commands["help"] = &InternalCommand{
-		Exec: func(args []string) error {
-			for _, arg := range args {
-				if arg == "-deep" {
+	{
+		subCmd := NewLazyCommand(func() Cmd { return c.NewGenerate() })
+		c.Commands["generate"] = subCmd
+
+	}
+
+	{
+		subCmd := NewLazyCommand(func() Cmd { return c.NewSamples() })
+		c.Commands["samples"] = subCmd
+
+	}
+	c.Commands["help"] = func() Cmd {
+		return &InternalCommand{
+			Exec: func(args []string) error {
+				if slices.Contains(args, "-deep") {
 					c.UsageRecursive()
 					return nil
 				}
-			}
-			c.Usage()
-			return nil
-		},
-		UsageFunc: c.Usage,
+				c.Usage()
+				return nil
+			},
+			UsageFunc: c.Usage,
+		}
 	}
-	c.Commands["usage"] = &InternalCommand{
-		Exec: func(args []string) error {
-			for _, arg := range args {
-				if arg == "-deep" {
+	c.Commands["usage"] = func() Cmd {
+		return &InternalCommand{
+			Exec: func(args []string) error {
+				if slices.Contains(args, "-deep") {
 					c.UsageRecursive()
 					return nil
 				}
-			}
-			c.Usage()
-			return nil
-		},
-		UsageFunc: c.Usage,
+				c.Usage()
+				return nil
+			},
+			UsageFunc: c.Usage,
+		}
 	}
-	c.Commands["version"] = &InternalCommand{
-		Exec: func(args []string) error {
-			fmt.Printf("Version: %s\nCommit: %s\nDate: %s\n", c.Version, c.Commit, c.Date)
-			return nil
-		},
-		UsageFunc: func() {
-			fmt.Fprintf(os.Stderr, "Usage: %s version\n", os.Args[0])
-		},
+	c.Commands["version"] = func() Cmd {
+		return &InternalCommand{
+			Exec: func(args []string) error {
+				fmt.Printf("Version: %s\nCommit: %s\nDate: %s\n", c.Version, c.Commit, c.Date)
+				return nil
+			},
+			UsageFunc: func() {
+				fmt.Fprintf(os.Stderr, "Usage: %s version\n", os.Args[0])
+			},
+		}
 	}
 	return c, nil
 }
 
 func (c *RootCmd) Execute(args []string) error {
-	if err := c.Parse(args); err != nil {
-		return NewUserError(err, fmt.Sprintf("flag parse error %s", err.Error()))
+	var remainingArgs []string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			remainingArgs = append(remainingArgs, args[i+1:]...)
+			break
+		}
+		if strings.HasPrefix(arg, "--") {
+			if arg == "--help" {
+				c.Usage()
+				return nil
+			}
+			name := arg[2:]
+			value := ""
+			hasValue := false
+			if strings.Contains(name, "=") {
+				parts := strings.SplitN(name, "=", 2)
+				name = parts[0]
+				value = parts[1]
+				hasValue = true
+			}
+			_ = value
+			_ = hasValue
+			switch name {
+			default:
+				return fmt.Errorf("unknown flag: --%s", name)
+			}
+		} else if strings.HasPrefix(arg, "-") && arg != "-" {
+			// Short flags
+			shorts := arg[1:]
+			for j := 0; j < len(shorts); j++ {
+				char := string(shorts[j])
+				if char == "h" {
+					c.Usage()
+					return nil
+				}
+				found := false
+				if !found {
+					return fmt.Errorf("unknown flag: -%s", char)
+				}
+			}
+		} else {
+			remainingArgs = append(remainingArgs, args[i:]...)
+			break
+		}
 	}
-	remainingArgs := c.Args()
-	if len(remainingArgs) < 1 {
-		c.Usage()
-		return nil
+
+	if len(remainingArgs) > 0 {
+		if cmd, ok := c.Commands[remainingArgs[0]]; ok {
+			return cmd().Execute(remainingArgs[1:])
+		}
 	}
-	cmd, ok := c.Commands[remainingArgs[0]]
-	if !ok {
-		c.Usage()
+	c.Usage()
+	if len(remainingArgs) > 0 {
 		return fmt.Errorf("unknown command: %s", remainingArgs[0])
 	}
-	return cmd.Execute(remainingArgs[1:])
+	return nil
 }
