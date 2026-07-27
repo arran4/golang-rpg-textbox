@@ -69,12 +69,14 @@ func fetchLocal(source string, targetDir string) (string, error) {
 		if err != nil {
 			return err
 		}
-		defer srcFile.Close()
+		defer func() { _ = srcFile.Close() }()
+
 		destFile, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, info.Mode())
 		if err != nil {
 			return err
 		}
-		defer destFile.Close()
+		defer func() { _ = destFile.Close() }()
+
 		_, err = io.Copy(destFile, srcFile)
 		return err
 	})
@@ -101,7 +103,7 @@ func fetchGitHub(owner string, repo string, subpath string, targetDir string) (s
 	if err != nil {
 		return "", fmt.Errorf("failed to get commit info: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to fetch from GitHub: %s", resp.Status)
@@ -128,7 +130,7 @@ func fetchGitHub(owner string, repo string, subpath string, targetDir string) (s
 	if err != nil {
 		return "", fmt.Errorf("failed to download zip: %w", err)
 	}
-	defer respZip.Body.Close()
+	defer func() { _ = respZip.Body.Close() }()
 
 	if respZip.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to download zip: %s", respZip.Status)
@@ -177,11 +179,15 @@ func fetchGitHub(owner string, repo string, subpath string, targetDir string) (s
 		destPath := filepath.Join(targetDir, relPath)
 
 		if file.FileInfo().IsDir() {
-			os.MkdirAll(destPath, file.Mode())
+			if err := os.MkdirAll(destPath, file.Mode()); err != nil {
+				return "", err
+			}
 			continue
 		}
 
-		os.MkdirAll(filepath.Dir(destPath), 0755)
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return "", err
+		}
 
 		srcFile, err := file.Open()
 		if err != nil {
@@ -190,13 +196,13 @@ func fetchGitHub(owner string, repo string, subpath string, targetDir string) (s
 
 		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
-			srcFile.Close()
+			_ = srcFile.Close()
 			return "", err
 		}
 
 		_, err = io.Copy(destFile, srcFile)
-		srcFile.Close()
-		destFile.Close()
+		_ = srcFile.Close()
+		_ = destFile.Close()
 
 		if err != nil {
 			return "", err

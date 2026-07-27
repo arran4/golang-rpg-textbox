@@ -34,17 +34,19 @@ func Install(source string, scope string, agent string, args []string) error {
 
 	if _, err := os.Stat(targetDir); err == nil {
 		fmt.Printf("Removing existing skill directory...\n")
-		os.RemoveAll(targetDir)
+		if err := os.RemoveAll(targetDir); err != nil {
+			return fmt.Errorf("failed to remove existing directory: %w", err)
+		}
 	}
 
 	revision, err := FetchSkill(source, targetDir)
 	if err != nil {
-		os.RemoveAll(targetDir)
+		_ = os.RemoveAll(targetDir)
 		return fmt.Errorf("failed to fetch skill: %w", err)
 	}
 
 	if _, err := os.Stat(filepath.Join(targetDir, "SKILL.md")); os.IsNotExist(err) {
-		os.RemoveAll(targetDir)
+		_ = os.RemoveAll(targetDir)
 		return fmt.Errorf("invalid skill: SKILL.md not found")
 	}
 
@@ -57,7 +59,7 @@ func Install(source string, scope string, agent string, args []string) error {
 		InstallTime: time.Now().Format(time.RFC3339),
 	}
 	if err := WriteMetadata(targetDir, meta); err != nil {
-		os.RemoveAll(targetDir)
+		_ = os.RemoveAll(targetDir)
 		return fmt.Errorf("failed to write metadata: %w", err)
 	}
 
@@ -149,29 +151,40 @@ func Update(name string, all bool, force bool) error {
 
 		revision, err := FetchSkill(meta.Source, tempDir)
 		if err != nil {
-			os.RemoveAll(tempDir)
+			_ = os.RemoveAll(tempDir)
 			fmt.Printf("Failed to check for updates for %s: %v\n", s, err)
 			continue
 		}
 
 		if revision == meta.Revision && !force {
 			fmt.Printf("Skill %s is already up to date (revision: %s)\n", s, meta.Revision)
-			os.RemoveAll(tempDir)
+			_ = os.RemoveAll(tempDir)
 			continue
 		}
 
 		if _, err := os.Stat(filepath.Join(tempDir, "SKILL.md")); os.IsNotExist(err) {
-			os.RemoveAll(tempDir)
+			_ = os.RemoveAll(tempDir)
 			fmt.Printf("Failed to update %s: new version is missing SKILL.md\n", s)
 			continue
 		}
 
-		os.RemoveAll(targetDir)
-		os.Rename(tempDir, targetDir)
+		if err := os.RemoveAll(targetDir); err != nil {
+			fmt.Printf("Failed to remove old skill %s: %v\n", s, err)
+			_ = os.RemoveAll(tempDir)
+			continue
+		}
+		if err := os.Rename(tempDir, targetDir); err != nil {
+			fmt.Printf("Failed to rename updated skill %s: %v\n", s, err)
+			_ = os.RemoveAll(tempDir)
+			continue
+		}
 
 		meta.Revision = revision
 		meta.InstallTime = time.Now().Format(time.RFC3339)
-		WriteMetadata(targetDir, meta)
+		if err := WriteMetadata(targetDir, meta); err != nil {
+			fmt.Printf("Failed to write metadata for skill %s: %v\n", s, err)
+			continue
+		}
 
 		fmt.Printf("Successfully updated skill %s to revision %s\n", s, revision)
 	}

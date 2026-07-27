@@ -11,22 +11,24 @@ import (
 func GetTargetDirectory(scope string, agent string, name string) (string, error) {
 	baseDir := ""
 
-	if scope == "project" || scope == "local" {
+	switch scope {
+	case "project", "local":
 		baseDir = ".agents/skills"
-	} else if scope == "user" || scope == "global" {
+	case "user", "global":
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", fmt.Errorf("could not determine home directory: %w", err)
 		}
 
-		if agent == "cursor" {
+		switch agent {
+		case "cursor":
 			baseDir = filepath.Join(home, ".cursor", "skills")
-		} else if agent == "copilot" {
+		case "copilot":
 			baseDir = filepath.Join(home, ".github-copilot", "skills")
-		} else {
+		default:
 			baseDir = filepath.Join(home, ".agents", "skills")
 		}
-	} else {
+	default:
 		return "", fmt.Errorf("unknown scope: %s (must be user or project)", scope)
 	}
 

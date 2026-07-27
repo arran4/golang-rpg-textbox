@@ -33,14 +33,22 @@ func TestLocalInstallAndRemove(t *testing.T) {
 	// Setup mock source
 	sourceDir := t.TempDir()
 	skillDir := filepath.Join(sourceDir, "testskill")
-	os.MkdirAll(skillDir, 0755)
-	os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Test Skill"), 0644)
+	if err := os.MkdirAll(skillDir, 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Test Skill"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
 
 	// Change working directory to a temp dir so "project" scope installs there
 	cwd, _ := os.Getwd()
 	workDir := t.TempDir()
-	os.Chdir(workDir)
-	defer os.Chdir(cwd)
+	if err := os.Chdir(workDir); err != nil {
+		t.Fatalf("failed to chdir: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(cwd)
+	}()
 
 	// Test Install
 	err := Install(skillDir, "project", "", []string{})

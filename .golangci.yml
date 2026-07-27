@@ -1,0 +1,8 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+linters:
+  enable:
+    - errcheck
+    - staticcheck
