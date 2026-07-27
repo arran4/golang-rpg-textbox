@@ -233,3 +233,40 @@ There are a bunch of options, options are used in the following way:
 # License 
 
 TBH I really haven't thought about it. Contact me
+
+## AI Agent Skills
+
+`rpgtextbox` includes support for installing and managing AI Agent Skills. These skills teach coding agents how to use this CLI correctly and effectively.
+
+### Installing a Skill
+
+Install a skill using the `skill install` subcommand.
+
+```bash
+# Install a local skill
+rpgtextbox skill install ./skills/rpgtextbox --scope project
+
+# Install a skill from a GitHub repository
+rpgtextbox skill install owner/repository/skills/myskill --scope user --agent cursor
+```
+
+### Managing Skills
+
+You can update, remove, list, and inspect installed skills.
+
+```bash
+# Update an installed skill
+rpgtextbox skill update myskill
+
+# Update all installed skills
+rpgtextbox skill update --all
+
+# List installed skills
+rpgtextbox skill list
+
+# Inspect an installed skill
+rpgtextbox skill inspect myskill
+
+# Remove an installed skill
+rpgtextbox skill remove myskill
+```

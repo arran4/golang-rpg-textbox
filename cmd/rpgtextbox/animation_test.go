@@ -3,20 +3,16 @@
 package main
 
 import (
-	"flag"
 	"testing"
 )
 
-func TestGenerate_Execute(t *testing.T) {
+func TestAnimation_Execute(t *testing.T) {
 
-	parent := &RootCmd{
-		FlagSet:  flag.NewFlagSet("root", flag.ContinueOnError),
-		Commands: make(map[string]Cmd),
-	}
-	cmd := parent.NewGenerate()
+	parent := &Samples{}
+	cmd := parent.NewAnimation()
 
 	called := false
-	cmd.CommandAction = func(c *Generate) error {
+	cmd.CommandAction = func(c *Animation) error {
 		called = true
 		return nil
 	}
