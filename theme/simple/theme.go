@@ -23,6 +23,15 @@ var (
 
 	fontFaceOnce sync.Once
 	fontFace     font.Face
+
+	chevronOnce sync.Once
+	chevronImg  image.Image
+
+	frameOnce sync.Once
+	frameImg  image.Image
+
+	avatarOnce sync.Once
+	avatarImg  image.Image
 )
 
 type t struct{}
@@ -36,19 +45,25 @@ var _ theme.Theme = (*t)(nil)
 var _ theme.Frame = (*t)(nil)
 
 func (t *t) Chevron() image.Image {
-	chevron, err := png.Decode(bytes.NewReader(ChevronBytes))
-	if err != nil {
-		panic(err)
-	}
-	return chevron
+	chevronOnce.Do(func() {
+		var err error
+		chevronImg, err = png.Decode(bytes.NewReader(ChevronBytes))
+		if err != nil {
+			panic(err)
+		}
+	})
+	return chevronImg
 }
 
 func (t *t) Frame() image.Image {
-	frame, err := png.Decode(bytes.NewReader(FrameBytes))
-	if err != nil {
-		panic(err)
-	}
-	return frame
+	frameOnce.Do(func() {
+		var err error
+		frameImg, err = png.Decode(bytes.NewReader(FrameBytes))
+		if err != nil {
+			panic(err)
+		}
+	})
+	return frameImg
 }
 
 func (t *t) FrameCenter() image.Rectangle {
@@ -56,11 +71,14 @@ func (t *t) FrameCenter() image.Rectangle {
 }
 
 func (t *t) Avatar() image.Image {
-	person, err := png.Decode(bytes.NewReader(AvatarBytes))
-	if err != nil {
-		panic(err)
-	}
-	return person
+	avatarOnce.Do(func() {
+		var err error
+		avatarImg, err = png.Decode(bytes.NewReader(AvatarBytes))
+		if err != nil {
+			panic(err)
+		}
+	})
+	return avatarImg
 }
 
 func (t *t) FontFace() font.Face {
