@@ -9,35 +9,35 @@ import (
 	"strings"
 )
 
-var _ Cmd = (*Samples)(nil)
+var _ Cmd = (*Skill)(nil)
 
-type Samples struct {
+type Skill struct {
 	*RootCmd
 	Flags         *flag.FlagSet
 	SubCommands   map[string]Cmd
-	CommandAction func(c *Samples) error
+	CommandAction func(c *Skill) error
 }
 
-type UsageDataSamples struct {
-	*Samples
+type UsageDataSkill struct {
+	*Skill
 	Recursive bool
 }
 
-func (c *Samples) Usage() {
-	err := executeUsage(os.Stderr, "samples_usage.txt", UsageDataSamples{c, false})
+func (c *Skill) Usage() {
+	err := executeUsage(os.Stderr, "skill_usage.txt", UsageDataSkill{c, false})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating usage: %s\n", err)
 	}
 }
 
-func (c *Samples) UsageRecursive() {
-	err := executeUsage(os.Stderr, "samples_usage.txt", UsageDataSamples{c, true})
+func (c *Skill) UsageRecursive() {
+	err := executeUsage(os.Stderr, "skill_usage.txt", UsageDataSkill{c, true})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating usage: %s\n", err)
 	}
 }
 
-func (c *Samples) Execute(args []string) error {
+func (c *Skill) Execute(args []string) error {
 	if len(args) > 0 {
 		if cmd, ok := c.SubCommands[args[0]]; ok {
 			return cmd.Execute(args[1:])
@@ -66,18 +66,24 @@ func (c *Samples) Execute(args []string) error {
 	return nil
 }
 
-func (c *RootCmd) NewSamples() *Samples {
-	set := flag.NewFlagSet("samples", flag.ContinueOnError)
-	v := &Samples{
+func (c *RootCmd) NewSkill() *Skill {
+	set := flag.NewFlagSet("skill", flag.ContinueOnError)
+	v := &Skill{
 		RootCmd:     c,
 		Flags:       set,
 		SubCommands: make(map[string]Cmd),
 	}
 	set.Usage = v.Usage
 
-	v.SubCommands["animation"] = v.NewAnimation()
+	v.SubCommands["inspect"] = v.NewInspect()
 
-	v.SubCommands["static"] = v.NewStatic()
+	v.SubCommands["install"] = v.NewInstall()
+
+	v.SubCommands["list"] = v.NewList()
+
+	v.SubCommands["remove"] = v.NewRemove()
+
+	v.SubCommands["update"] = v.NewUpdate()
 
 	v.SubCommands["help"] = &InternalCommand{
 		Exec: func(args []string) error {

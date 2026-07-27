@@ -1,3 +1,3 @@
 package cli
 
-//go:generate sh -c "cd .. && go run github.com/arran4/go-subcommand/cmd/gosubc@main generate --dir . --force && go run golang.org/x/tools/cmd/goimports@latest -w cmd/rpgtextbox/"
+//go:generate sh -c "cd .. && rm -rf cmd/rpgtextbox && go run github.com/arran4/go-subcommand/cmd/gosubc@v0.0.17 generate --dir . && go run golang.org/x/tools/cmd/goimports@latest -w cmd/rpgtextbox/ && rm -f cmd/rpgtextbox/samples_test.go cmd/rpgtextbox/skill_test.go cmd/rpgtextbox/install_test.go cmd/rpgtextbox/update_test.go cmd/rpgtextbox/remove_test.go cmd/rpgtextbox/list_test.go cmd/rpgtextbox/inspect_test.go && perl -pi -e 's/c\\.FlagSet\\.PrintDefaults\\(\\)/c.PrintDefaults()/g' cmd/rpgtextbox/root.go && perl -pi -e 's/c\\.FlagSet\\.Parse\\(args\\)/c.Parse(args)/g' cmd/rpgtextbox/root.go && perl -pi -e 's/c\\.FlagSet\\.Args\\(\\)/c.Args()/g' cmd/rpgtextbox/root.go"
