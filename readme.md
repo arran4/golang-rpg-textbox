@@ -234,6 +234,31 @@ There are a bunch of options, options are used in the following way:
 | `rpgtextbox.Name(name string), rpgtextbox.NameTopCenterInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-top-center.png) |
 | `rpgtextbox.Name(name string), rpgtextbox.NameLeftAboveAvatarInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-top-left-text.png) |
 
+
+## Dynamic Frames and Backdrops
+
+You can override the static theme frame and backdrop dynamically from the CLI using the `--frame` and `--pattern` options. This uses `github.com/arran4/golang-frame` for the frame boundaries and `github.com/arran4/go-pattern` for procedural pattern generation.
+
+Example using `window_retro` frame and `brick` pattern:
+```bash
+rpgtextbox generate \
+    --frame window_retro \
+    --pattern brick \
+    --themedir theme/simple \
+    --out example-window_retro-brick \
+    --text sample.txt
+```
+
+Example using `sign_street_xlarge` frame and `polka` pattern:
+```bash
+rpgtextbox generate \
+    --frame sign_street_xlarge \
+    --pattern polka \
+    --themedir theme/simple \
+    --out example-sign_street_xlarge-polka \
+    --text sample.txt
+```
+
 # License 
 
 TBH I really haven't thought about it. Contact me
