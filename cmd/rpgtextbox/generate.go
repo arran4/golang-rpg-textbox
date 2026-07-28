@@ -32,6 +32,8 @@ type Generate struct {
 	avatarPos     string
 	avatarScale   string
 	animation     string
+	frame         string
+	pattern       string
 	SubCommands   map[string]Cmd
 	CommandAction func(c *Generate) error
 }
@@ -218,6 +220,28 @@ func (c *Generate) Execute(args []string) error {
 					}
 				}
 				c.animation = value
+
+			case "frame":
+				if !hasValue {
+					if i+1 < len(args) {
+						value = args[i+1]
+						i++
+					} else {
+						return fmt.Errorf("flag %s requires a value", name)
+					}
+				}
+				c.frame = value
+
+			case "pattern":
+				if !hasValue {
+					if i+1 < len(args) {
+						value = args[i+1]
+						i++
+					} else {
+						return fmt.Errorf("flag %s requires a value", name)
+					}
+				}
+				c.pattern = value
 			case "help", "h":
 				c.Usage()
 				return nil
@@ -269,11 +293,15 @@ func (c *RootCmd) NewGenerate() *Generate {
 	set.StringVar(&v.avatarScale, "avatar-scale", "", "Use help for list")
 
 	set.StringVar(&v.animation, "animation", "", "Use help for list")
+
+	set.StringVar(&v.frame, "frame", "", "Use help for list")
+
+	set.StringVar(&v.pattern, "pattern", "", "Use help for list")
 	set.Usage = v.Usage
 
 	v.CommandAction = func(c *Generate) error {
 
-		err := cli.GenerateTextBox(c.width, c.height, c.themeDir, c.fontName, c.dpi, c.fontSize, c.textSource, c.outPrefix, c.chevronLoc, c.avatarPos, c.avatarScale, c.animation)
+		err := cli.GenerateTextBox(c.width, c.height, c.themeDir, c.fontName, c.dpi, c.fontSize, c.textSource, c.outPrefix, c.chevronLoc, c.avatarPos, c.avatarScale, c.animation, c.frame, c.pattern)
 		if err != nil {
 			if errors.Is(err, cmd.ErrPrintHelp) {
 				c.Usage()

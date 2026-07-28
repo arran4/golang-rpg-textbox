@@ -2,6 +2,8 @@ github.com/arran4/go-pattern v0.0.6 h1:H+j9xBJbzsAFszT/extVzUaWv++ZW0BSeYh5DB7Vq
 github.com/arran4/go-pattern v0.0.6/go.mod h1:HvC2xj/XYjxkFH6WlX9yVvlXGJmj4QnE8+8aJRJLRqA=
 github.com/arran4/golang-frame v0.0.2 h1:aIiA3fWTvEqAUkFZQOOXK1mjvMMrCWHD6oOJrE3R66w=
 github.com/arran4/golang-frame v0.0.2/go.mod h1:0oyIehQ1Omac8Bxk6mlhsSgMvvHZfonQfHeRMUXB3p8=
+github.com/arran4/golang-frame v0.0.7 h1:g7CtY+5cy+TigNpIstfrVokT3AFd4LPv/jTqfp5vUIg=
+github.com/arran4/golang-frame v0.0.7/go.mod h1:dJFGOl4VZMSDsWa8M0s7HZ3V+IDG+BN2nU0U3EkF5uE=
 github.com/arran4/golang-wordwrap v0.0.4 h1:c3cONqcJwI42L6p29CsyR55y06y0qHM/FcspQlAIniE=
 github.com/arran4/golang-wordwrap v0.0.4/go.mod h1:YO0IuaoREh0T4Ch1nFXCrfL4otixzuBpIW4hxKaTQos=
 github.com/arran4/spacemap v0.0.2 h1:9wlU93s8JYWzDk5Gw9tIzFha5bVrCgd48D+zKHV6VAw=

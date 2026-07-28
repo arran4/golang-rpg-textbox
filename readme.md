@@ -5,10 +5,10 @@ This is a "simple" library / cli application to generate animated and static RPG
 ![](images/end-of-text-chevron+left-avatar+center-avatar+letter-by-letter-animation.gif)
 
 The library uses:
-* https://github.com/arran4/golang-frame for the frame, which subdivides an image into 9 parts, and uses that
+* https://github.com/arran4/golang-frame for the frame, which subdivides an image into 9 parts. These can be overridden using the CLI flags, and uses that
   to draw the frame. The content is repeated or stretched to match.
-* https://github.com/arran4/golang-rpg-textbox for the text wrapping, most options can be passed into the 
-  wrapper
+* https://github.com/arran4/golang-rpg-textbox for the text wrapping, most options can be passed into the wrapper.
+* https://github.com/arran4/go-pattern for backdrops. You can replace the backdrop of the frame by specifying a pattern.
 
 In order to use this library you will need:
 * To know what font you will be using
@@ -146,6 +146,10 @@ the following flags:
 rpgtextbox.exe:
   -animation string
     	Use help for list
+  -frame string
+	Use help for list
+  -pattern string
+	Use help for list
   -avatar-pos string
     	Use help for list
   -avatar-scale string
