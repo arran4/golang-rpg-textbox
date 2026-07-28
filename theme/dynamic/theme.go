@@ -78,11 +78,9 @@ func (t *t) FrameCenter() image.Rectangle {
 }
 func (t *t) FontDrawer() *font.Drawer {
 	fd := t.Source.FontDrawer()
-	// Change font color for better readability on darker patterns (e.g. polka)
-	// We can set it to white if pattern is used, or maybe we just hardcode it to white if we know polka is dark.
-	// Actually, a better approach is to let the user specify font color, or if a pattern is used, we can default to white if needed, but since we can't easily guess, let's just make it white for all dynamic patterns for now, or just let it be. Wait, the user specifically said "the text in this one is unreadable make the text some other color". So I'll change it to white if pattern is specified.
+	// Change font color for better readability on generated pattern backgrounds
 	if t.patternStr != "" {
-		fd.Src = image.NewUniform(color.White)
+		fd.Src = image.NewUniform(color.RGBA{240, 240, 240, 255})
 	}
 	return fd
 }
