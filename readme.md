@@ -255,6 +255,7 @@ Example using `macosx_like_xlarge` frame and `checker` pattern:
 rpgtextbox generate \
     --frame macosx_like_xlarge \
     --pattern "checker black white" \
+    --font-color white \
     --themedir theme/simple \
     --out example-macosx_like_xlarge-checker \
     --text sample.txt
@@ -265,6 +266,7 @@ Example using `mac_system_3_like_xlarge` frame and `checker` pattern:
 rpgtextbox generate \
     --frame mac_system_3_like_xlarge \
     --pattern "checker black white" \
+    --font-color white \
     --themedir theme/simple \
     --out example-mac_system_3_like_xlarge-checker \
     --text sample.txt

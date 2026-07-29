@@ -40,7 +40,9 @@ import (
 //	animation:   --animation   (default: "")          Use help for list
 //	frame:       --frame       (default: "")          Use help for list
 //	pattern:     --pattern     (default: "")          Use help for list
-func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize string, textSource, outPrefix, chevronLoc, avatarPos, avatarScale, animation, frame, pattern string) error {
+//	fontColor:   --font-color  (default: "black")     Text font color (e.g., white, black)
+func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize string, textSource, outPrefix, chevronLoc, avatarPos, avatarScale, animation, frame, pattern, fontColor string) error {
+
 	log.Printf("Starting")
 	textBoxSize := image.Pt(width, height)
 	var text string
@@ -84,9 +86,10 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 		return nil
 	}
 
-	if frame != "" || pattern != "" {
-		t = dynamic.New(baseTheme, frame, pattern)
+	if frame != "" || pattern != "" || fontColor != "black" {
+		t = dynamic.New(baseTheme, frame, pattern, fontColor)
 	}
+
 	var ops []rpgtextbox.Option
 	chevronLocs := map[string][]rpgtextbox.Option{
 		"center-bottom-chevron":               []rpgtextbox.Option{rpgtextbox.CenterBottomInsideTextFrame},

@@ -18,13 +18,15 @@ type t struct {
 	cache.Source
 	frameName  string
 	patternStr string
+	fontColor  string
 }
 
-func New(source cache.Source, frameName, patternStr string) *t {
+func New(source cache.Source, frameName, patternStr, fontColor string) *t {
 	return &t{
 		Source:     source,
 		frameName:  frameName,
 		patternStr: patternStr,
+		fontColor:  fontColor,
 	}
 }
 
@@ -78,9 +80,13 @@ func (t *t) FrameCenter() image.Rectangle {
 }
 func (t *t) FontDrawer() *font.Drawer {
 	fd := t.Source.FontDrawer()
-	// Change font color for better readability on generated pattern backgrounds
-	if t.patternStr != "" {
+	if t.fontColor == "white" {
 		fd.Src = image.NewUniform(color.RGBA{240, 240, 240, 255})
+	} else if t.fontColor == "black" || t.fontColor == "" {
+		fd.Src = image.NewUniform(color.Black)
+	} else {
+		// fallback
+		fd.Src = image.NewUniform(color.Black)
 	}
 	return fd
 }
