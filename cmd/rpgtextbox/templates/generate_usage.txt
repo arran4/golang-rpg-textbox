@@ -17,3 +17,6 @@ Flags:
     --avatar-pos string     Use help for list
     --avatar-scale string   Use help for list
     --animation string      Use help for list
+    --frame string          Use help for list
+    --pattern string        Use help for list
+    --font-color string     Text font color e.g. white black (default: black)

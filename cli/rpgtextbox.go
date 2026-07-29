@@ -9,8 +9,14 @@ import (
 	"strconv"
 	"time"
 
+	pattern_cli "github.com/arran4/go-pattern/pkg/pattern-cli"
+
+	"github.com/arran4/go-pattern/dsl"
+	"github.com/arran4/golang-frame/frames"
 	rpgtextbox "github.com/arran4/golang-rpg-textbox"
+	"github.com/arran4/golang-rpg-textbox/theme"
 	"github.com/arran4/golang-rpg-textbox/theme/cache"
+	"github.com/arran4/golang-rpg-textbox/theme/dynamic"
 	"github.com/arran4/golang-rpg-textbox/theme/fromdirpng"
 	"github.com/arran4/golang-rpg-textbox/util"
 	"golang.org/x/image/draw"
@@ -32,7 +38,11 @@ import (
 //	avatarPos:   --avatar-pos  (default: "")          Use help for list
 //	avatarScale: --avatar-scale (default: "")         Use help for list
 //	animation:   --animation   (default: "")          Use help for list
-func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize string, textSource, outPrefix, chevronLoc, avatarPos, avatarScale, animation string) error {
+//	frame:       --frame       (default: "")          Use help for list
+//	pattern:     --pattern     (default: "")          Use help for list
+//	fontColor:   --font-color  (default: "black")     Text font color (e.g., white, black)
+func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize string, textSource, outPrefix, chevronLoc, avatarPos, avatarScale, animation, frame, pattern, fontColor string) error {
+
 	log.Printf("Starting")
 	textBoxSize := image.Pt(width, height)
 	var text string
@@ -54,10 +64,32 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 		return fmt.Errorf("invalid float value for dpi: %s", dpi)
 	}
 	grf := util.GetFontFace(fFontSize, fDpi, gr)
-	t, err := cache.New(fromdirpng.New(themeDir, grf))
+	var t theme.Theme
+	baseTheme, err := cache.New(fromdirpng.New(themeDir, grf))
 	if err != nil {
 		return fmt.Errorf("theme fetch error: %w", err)
 	}
+	t = baseTheme
+
+	if frame == "help" {
+		for k := range frames.ByName {
+			log.Printf("%s", k)
+		}
+		return nil
+	}
+	if pattern == "help" {
+		fm := make(dsl.FuncMap)
+		pattern_cli.RegisterGeneratedCommands(fm)
+		for k := range fm {
+			log.Printf("%s", k)
+		}
+		return nil
+	}
+
+	if frame != "" || pattern != "" || fontColor != "black" {
+		t = dynamic.New(baseTheme, frame, pattern, fontColor)
+	}
+
 	var ops []rpgtextbox.Option
 	chevronLocs := map[string][]rpgtextbox.Option{
 		"center-bottom-chevron":               []rpgtextbox.Option{rpgtextbox.CenterBottomInsideTextFrame},

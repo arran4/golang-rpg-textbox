@@ -261,7 +261,7 @@ func NewRichTextBox(th theme.Theme, args ...interface{}) (*TextBox, error) {
 	// If multiple fonts passed, last one wins?
 	// Let's check ProcessRichArgs (impl detail of wordwrap).
 	// Assuming providing it as one of the args is good.
-	wordwrapArgs = append([]interface{}{th.FontFace()}, wordwrapArgs...)
+	wordwrapArgs = append([]interface{}{th.FontDrawer()}, wordwrapArgs...)
 
 	// We also need to pass tb.wordwrapOptions which might have been populated by TextBox options (like Chevron)
 	if tb.moreChevronLocation == TextEndChevron {

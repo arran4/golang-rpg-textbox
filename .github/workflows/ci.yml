@@ -259,7 +259,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          install-mode: goinstall
+          version: latest
 
   go-test:
     name: Go lint/test (${{ matrix.os }})

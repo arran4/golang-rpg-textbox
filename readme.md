@@ -5,10 +5,10 @@ This is a "simple" library / cli application to generate animated and static RPG
 ![](images/end-of-text-chevron+left-avatar+center-avatar+letter-by-letter-animation.gif)
 
 The library uses:
-* https://github.com/arran4/golang-frame for the frame, which subdivides an image into 9 parts, and uses that
+* https://github.com/arran4/golang-frame for the frame, which subdivides an image into 9 parts. These can be overridden using the CLI flags, and uses that
   to draw the frame. The content is repeated or stretched to match.
-* https://github.com/arran4/golang-rpg-textbox for the text wrapping, most options can be passed into the 
-  wrapper
+* https://github.com/arran4/golang-rpg-textbox for the text wrapping, most options can be passed into the wrapper.
+* https://github.com/arran4/go-pattern for backdrops. You can replace the backdrop of the frame by specifying a pattern.
 
 In order to use this library you will need:
 * To know what font you will be using
@@ -146,6 +146,10 @@ the following flags:
 rpgtextbox.exe:
   -animation string
     	Use help for list
+  -frame string
+	Use help for list
+  -pattern string
+	Use help for list
   -avatar-pos string
     	Use help for list
   -avatar-scale string
@@ -229,6 +233,61 @@ There are a bunch of options, options are used in the following way:
 | `rpgtextbox.Name(name string), rpgtextbox.NameTopLeftAboveTextInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-left-above-avatar.png) |
 | `rpgtextbox.Name(name string), rpgtextbox.NameTopCenterInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-top-center.png) |
 | `rpgtextbox.Name(name string), rpgtextbox.NameLeftAboveAvatarInFrame` | ![](images/right-bottom-on-frame-chevron+right-avatar+center-avatar+name-top-left-text.png) |
+
+
+## Dynamic Frames and Backdrops
+
+You can override the static theme frame and backdrop dynamically from the CLI using the `--frame` and `--pattern` options. This uses `github.com/arran4/golang-frame` for the frame boundaries and `github.com/arran4/go-pattern` for procedural pattern generation.
+
+Example using `window_retro` frame and `brick` pattern:
+```bash
+rpgtextbox generate \
+    --frame window_retro \
+    --pattern brick \
+    --themedir theme/simple \
+    --out example-window_retro-brick \
+    --text sample.txt
+```
+![](test_output/example-window_retro-brick-01.png)
+
+
+Example using `win95_like_xlarge` frame and `checker` pattern:
+```bash
+rpgtextbox generate \
+    --frame win95_like_xlarge \
+    --pattern "checker black white" \
+    --font-color black \
+    --themedir theme/simple \
+    --out example-win95_like_xlarge-checker \
+    --text sample.txt
+```
+![](test_output/example-win95_like_xlarge-checker-01.png)
+
+Example using `window_retro_xlarge` frame and `checker` pattern:
+```bash
+rpgtextbox generate \
+    --frame window_retro_xlarge \
+    --size 60 \
+    --pattern "checker black white" \
+    --font-color black \
+    --themedir theme/simple \
+    --height 600 \
+    --out example-window_retro_xlarge-checker \
+    --text sample.txt
+```
+![](test_output/example-window_retro_xlarge-checker-01.png)
+
+Example using `sign_street_xlarge` frame and `polka` pattern:
+```bash
+rpgtextbox generate \
+    --frame sign_street_xlarge \
+    --pattern polka \
+    --font-color white \
+    --themedir theme/simple \
+    --out example-sign_street_xlarge-polka-red-text \
+    --text sample.txt
+```
+![](test_output/example-sign_street_xlarge-polka-red-text-01.png)
 
 # License 
 
