@@ -248,6 +248,7 @@ rpgtextbox generate \
     --out example-window_retro-brick \
     --text sample.txt
 ```
+![](test_output/example-window_retro-brick-01.png)
 
 
 Example using `win95_like_xlarge` frame and `checker` pattern:
@@ -260,6 +261,7 @@ rpgtextbox generate \
     --out example-win95_like_xlarge-checker \
     --text sample.txt
 ```
+![](test_output/example-win95_like_xlarge-checker-01.png)
 
 Example using `window_retro_xlarge` frame and `checker` pattern:
 ```bash
@@ -273,16 +275,19 @@ rpgtextbox generate \
     --out example-window_retro_xlarge-checker \
     --text sample.txt
 ```
+![](test_output/example-window_retro_xlarge-checker-01.png)
 
 Example using `sign_street_xlarge` frame and `polka` pattern:
 ```bash
 rpgtextbox generate \
     --frame sign_street_xlarge \
     --pattern polka \
+    --font-color white \
     --themedir theme/simple \
-    --out example-sign_street_xlarge-polka \
+    --out example-sign_street_xlarge-polka-red-text \
     --text sample.txt
 ```
+![](test_output/example-sign_street_xlarge-polka-red-text-01.png)
 
 # License 
 
