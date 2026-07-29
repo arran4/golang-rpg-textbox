@@ -250,25 +250,25 @@ rpgtextbox generate \
 ```
 
 
-Example using `macosx_like_xlarge` frame and `checker` pattern:
+Example using `win95_like_xlarge` frame and `checker` pattern:
 ```bash
 rpgtextbox generate \
-    --frame macosx_like_xlarge \
+    --frame win95_like_xlarge \
     --pattern "checker black white" \
-    --font-color white \
+    --font-color black \
     --themedir theme/simple \
-    --out example-macosx_like_xlarge-checker \
+    --out example-win95_like_xlarge-checker \
     --text sample.txt
 ```
 
-Example using `mac_system_3_like_xlarge` frame and `checker` pattern:
+Example using `window_retro_xlarge` frame and `checker` pattern:
 ```bash
 rpgtextbox generate \
-    --frame mac_system_3_like_xlarge \
+    --frame window_retro_xlarge \
     --pattern "checker black white" \
-    --font-color white \
+    --font-color black \
     --themedir theme/simple \
-    --out example-mac_system_3_like_xlarge-checker \
+    --out example-window_retro_xlarge-checker \
     --text sample.txt
 ```
 
