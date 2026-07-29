@@ -80,11 +80,12 @@ func (t *t) FrameCenter() image.Rectangle {
 }
 func (t *t) FontDrawer() *font.Drawer {
 	fd := t.Source.FontDrawer()
-	if t.fontColor == "white" {
+	switch t.fontColor {
+	case "white":
 		fd.Src = image.NewUniform(color.RGBA{240, 240, 240, 255})
-	} else if t.fontColor == "black" || t.fontColor == "" {
+	case "black", "":
 		fd.Src = image.NewUniform(color.Black)
-	} else {
+	default:
 		// fallback
 		fd.Src = image.NewUniform(color.Black)
 	}
