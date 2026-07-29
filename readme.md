@@ -265,9 +265,11 @@ Example using `window_retro_xlarge` frame and `checker` pattern:
 ```bash
 rpgtextbox generate \
     --frame window_retro_xlarge \
+    --size 60 \
     --pattern "checker black white" \
     --font-color black \
     --themedir theme/simple \
+    --height 600 \
     --out example-window_retro_xlarge-checker \
     --text sample.txt
 ```

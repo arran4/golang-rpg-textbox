@@ -86,7 +86,7 @@ func GenerateTextBox(width, height int, themeDir, fontName string, dpi, fontSize
 		return nil
 	}
 
-	if frame != "" || pattern != "" || fontColor != "black" || fontColor != "" {
+	if frame != "" || pattern != "" || fontColor != "black" {
 		t = dynamic.New(baseTheme, frame, pattern, fontColor)
 	}
 
